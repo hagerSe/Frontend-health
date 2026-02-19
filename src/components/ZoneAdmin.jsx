@@ -1,102 +1,129 @@
-import { useState, useEffect } from 'react';
-import { api } from '../api';
 
-export default function ZoneAdmin() {
-  const [list, setList] = useState([]);
-  const [structure, setStructure] = useState([]);
-  const [name, setName] = useState('');
-  const [regionalId, setRegionalId] = useState('');
-  const [message, setMessage] = useState({ type: '', text: '' });
-  const [loading, setLoading] = useState(false);
-  const [tab, setTab] = useState('list');
 
-  async function loadList() {
-    try {
-      const data = await api('/zone');
-      setList(data.data || []);
-    } catch (e) {
-      setMessage({ type: 'error', text: e.message });
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+
+const ZoneAdmin = () => {
+  const [admin, setAdmin] = useState(null);
+
+  // Zone/Woreda admin form state
+  const [zoneForm, setZoneForm] = useState({
+    first_name: "",
+    middle_name: "",
+    last_name: "",
+    email: "",
+    phone_number: "",
+    password: "",
+    sex: "Male",
+    age: "",
+    zone: ""
+  });
+
+  useEffect(() => {
+    const storedAdmin = localStorage.getItem("admin");
+    if (storedAdmin) {
+      setAdmin(JSON.parse(storedAdmin));
     }
-  }
+  }, []);
 
-  async function loadStructure() {
-    try {
-      const data = await api('/zone/structure');
-      setStructure(data.data || []);
-    } catch (e) {
-      setMessage({ type: 'error', text: e.message });
-    }
-  }
+  // Handle form input change
+  const handleChange = (e) => {
+    setZoneForm({
+      ...zoneForm, // ✅ fixed
+      [e.target.name]: e.target.value,
+    });
+  };
 
-  useEffect(() => { loadList(); }, []);
-  useEffect(() => { if (tab === 'structure') loadStructure(); }, [tab]);
-
-  async function handleAdd(e) {
+  // Submit zone/woreda admin
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!name.trim()) return;
-    setLoading(true);
-    setMessage({ type: '', text: '' });
+
     try {
-      await api('/zone', { method: 'POST', body: { name: name.trim(), regional_id: regionalId || null } });
-      setMessage({ type: 'success', text: 'Zone added.' });
-      setName('');
-      loadList();
-    } catch (err) {
-      setMessage({ type: 'error', text: err.message });
-    } finally {
-      setLoading(false);
+      const token = localStorage.getItem("token");
+
+      await axios.post(
+        "http://localhost:5000/api/auth/register",
+        {
+          ...zoneForm,         // ✅ fixed
+          region: admin.region, // use correct admin info
+          zone: admin.zone      // optional for Woreda creation
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      alert("Admin Created Successfully");
+
+      // Clear form
+      setZoneForm({
+        first_name: "",
+        middle_name: "",
+        last_name: "",
+        email: "",
+        phone_number: "",
+        password: "",
+        sex: "Male",
+        age: "",
+        zone: ""
+      });
+
+    } catch (error) {
+      console.error(error);
+      alert("Error creating Admin");
     }
-  }
+  };
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-2xl font-bold text-slate-800 mb-2">Zone Admin</h1>
-      <p className="text-slate-600 text-sm mb-6">Manage zone level and view structure (woredas).</p>
-      <nav className="flex gap-2 mb-6">
-        <button onClick={() => setTab('list')} className={`px-4 py-2 rounded-lg font-medium ${tab === 'list' ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-700'}`}>List</button>
-        <button onClick={() => setTab('add')} className={`px-4 py-2 rounded-lg font-medium ${tab === 'add' ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-700'}`}>Add Zone</button>
-        <button onClick={() => setTab('structure')} className={`px-4 py-2 rounded-lg font-medium ${tab === 'structure' ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-700'}`}>Zone Structure</button>
-      </nav>
-      {message.text && (
-        <div className={`mb-4 p-3 rounded-lg text-sm ${message.type === 'error' ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}>{message.text}</div>
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-4">Zone Admin Dashboard</h1>
+
+      {admin ? (
+        <div className="bg-blue-50 p-4 rounded-lg shadow-md w-full max-w-md space-y-2">
+          <p><span className="font-semibold">First Name:</span> {admin.first_name}</p>
+          <p><span className="font-semibold">Last Name:</span> {admin.last_name}</p>
+          <p><span className="font-semibold">Zone Name:</span> {admin.zone}</p>
+          <p><span className="font-semibold">Regional Admin:</span> {admin.region}</p>
+        </div>
+      ) : (
+        <p>Loading admin info...</p>
       )}
-      {tab === 'list' && (
-        <ul className="bg-white rounded-lg border border-slate-200 divide-y">
-          {list.length === 0 && <li className="p-4 text-slate-500">No zone entries yet.</li>}
-          {list.map((z) => (
-            <li key={z.zone_id} className="p-4">{z.name}</li>
-          ))}
-        </ul>
-      )}
-      {tab === 'add' && (
-        <form onSubmit={handleAdd} className="bg-white rounded-lg border border-slate-200 p-6">
-          <label className="block text-slate-700 font-medium mb-1">Name</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} className="w-full border border-slate-300 rounded-lg px-4 py-2 mb-4" placeholder="Zone name" />
-          <label className="block text-slate-700 font-medium mb-1">Regional ID (optional)</label>
-          <input type="number" value={regionalId} onChange={(e) => setRegionalId(e.target.value)} className="w-full border border-slate-300 rounded-lg px-4 py-2 mb-4" />
-          <button type="submit" disabled={loading} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50">Add</button>
-        </form>
-      )}
-      {tab === 'structure' && (
-        <div className="bg-white rounded-lg border border-slate-200 p-6">
-          <h2 className="font-semibold text-slate-800 mb-4">Zone → Woredas</h2>
-          {structure.length === 0 && <p className="text-slate-500">No structure data.</p>}
-          <ul className="space-y-4">
-            {structure.map((z) => (
-              <li key={z.zone_id} className="border-l-2 border-blue-200 pl-4">
-                <span className="font-medium">{z.name}</span>
-                {z.WoredaLevels?.length > 0 && (
-                  <ul className="mt-2 ml-4 text-slate-600">
-                    {z.WoredaLevels.map((w) => (
-                      <li key={w.woreda_id}>→ {w.name}</li>
-                    ))}
-                  </ul>
-                )}
-              </li>
-            ))}
-          </ul>
+
+      {/* Zone/Woreda Admin Form */}
+      {admin && (
+        <div className="mt-8 bg-white p-6 rounded-lg shadow-md max-w-xl">
+          <h2 className="text-xl font-bold mb-4">
+            Create Woreda Admin (Under Zone: {admin.zone})
+          </h2>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+
+            <input type="text" name="first_name" placeholder="First Name" value={zoneForm.first_name} onChange={handleChange} required className="w-full border p-2 rounded" />
+            <input type="text" name="middle_name" placeholder="Middle Name" value={zoneForm.middle_name} onChange={handleChange} required className="w-full border p-2 rounded" />
+            <input type="text" name="last_name" placeholder="Last Name" value={zoneForm.last_name} onChange={handleChange} required className="w-full border p-2 rounded" />
+            <input type="email" name="email" placeholder="Email" value={zoneForm.email} onChange={handleChange} required className="w-full border p-2 rounded" />
+            <input type="text" name="phone_number" placeholder="Phone Number" value={zoneForm.phone_number} onChange={handleChange} className="w-full border p-2 rounded" />
+            <input type="password" name="password" placeholder="Password" value={zoneForm.password} onChange={handleChange} required className="w-full border p-2 rounded" />
+
+            <select name="sex" value={zoneForm.sex} onChange={handleChange} className="w-full border p-2 rounded">
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+
+            <input type="number" name="age" placeholder="Age" value={zoneForm.age} onChange={handleChange} className="w-full border p-2 rounded" />
+            <input type="text" name="zone" placeholder="Woreda Name" value={zoneForm.zone} onChange={handleChange} required className="w-full border p-2 rounded" />
+
+            <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+              Create Woreda Admin
+            </button>
+          </form>
         </div>
       )}
     </div>
   );
-}
+};
+
+export default ZoneAdmin;

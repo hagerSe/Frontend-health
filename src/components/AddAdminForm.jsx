@@ -73,7 +73,7 @@ export default function AddAdminForm({ onSuccess, onCancel }) {
           const list = (data.data || []).map((h) => ({ value: h.name, label: h.name }));
           if (!cancelled) setAssignmentOptions(list);
         }
-      } catch (e) {
+      } catch {
         if (!cancelled) setAssignmentOptions([]);
       } finally {
         if (!cancelled) setOptionsLoading(false);
