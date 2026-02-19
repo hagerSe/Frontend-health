@@ -1,176 +1,193 @@
-// import { useState } from "react";
-// import { 
-//   FaHome, 
-//   FaUserPlus, 
-//   FaUsers, 
-//   FaSearch, 
-//   FaChartBar 
-// } from "react-icons/fa";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { api } from "../api";
+import { 
+  FaUserPlus, FaAddressCard, FaSearch, FaClipboardCheck, 
+  FaSignOutAlt, FaNotesMedical, FaRegAddressBook, FaHospitalUser
+} from "react-icons/fa";
 
-// export default function CardOfficeDashboard() {
-//   const [sidebarOpen, setSidebarOpen] = useState(true);
-//   const [activeView, setActiveView] = useState("dashboard"); // controls main content
-
-//   // Example patients
-//   const patients = [
-//     { id: 1, firstName: "John", middleName: "Doe", lastName: "Smith", hospital: "Hospital A", date: "2026-02-17", status: "Active" },
-//     { id: 2, firstName: "Jane", middleName: "Mary", lastName: "Adams", hospital: "Hospital A", date: "2026-02-17", status: "Active" }
-//   ];
-
-//   return (
-//     <div className="flex h-screen bg-gray-100">
-//       {/* Sidebar */}
-//       <aside className={`${sidebarOpen ? "w-64" : "w-16"} bg-white shadow-lg p-4 transition-all duration-300`}>
-//         {/* Sidebar Header */}
-//         <div className="flex items-center justify-between mb-6">
-//           <h2 className={`${sidebarOpen ? "block" : "hidden"} text-xl font-bold`}>Card Office</h2>
-//           <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-gray-700">
-//             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-//               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-//             </svg>
-//           </button>
-//         </div>
-
-//         {/* Sidebar Menu */}
-//         <nav className="space-y-2">
-//           <button onClick={() => setActiveView("dashboard")} className="flex items-center w-full px-3 py-2 rounded hover:bg-blue-500 hover:text-white transition">
-//             <FaHome className="mr-2" /> {sidebarOpen && "Dashboard"}
-//           </button>
-//           <button onClick={() => setActiveView("register")} className="flex items-center w-full px-3 py-2 rounded hover:bg-blue-500 hover:text-white transition">
-//             <FaUserPlus className="mr-2" /> {sidebarOpen && "Register Patient"}
-//           </button>
-//           <button onClick={() => setActiveView("queue")} className="flex items-center w-full px-3 py-2 rounded hover:bg-blue-500 hover:text-white transition">
-//             <FaUsers className="mr-2" /> {sidebarOpen && "Patient Queue"}
-//           </button>
-//           <button onClick={() => setActiveView("search")} className="flex items-center w-full px-3 py-2 rounded hover:bg-blue-500 hover:text-white transition">
-//             <FaSearch className="mr-2" /> {sidebarOpen && "Search Patient"}
-//           </button>
-//           <button onClick={() => setActiveView("reports")} className="flex items-center w-full px-3 py-2 rounded hover:bg-blue-500 hover:text-white transition">
-//             <FaChartBar className="mr-2" /> {sidebarOpen && "Reports"}
-//           </button>
-//         </nav>
-//       </aside>
-
-//       {/* Main Content */}
-//       <main className="flex-1 p-6 overflow-auto">
-//         {activeView === "dashboard" && (
-//           <>
-//             <h1 className="text-2xl font-bold mb-4">Dashboard Overview</h1>
-//             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-//               <div className="bg-blue-100 p-4 rounded shadow">Total Registered Today: {patients.length}</div>
-//               <div className="bg-green-100 p-4 rounded shadow">Active Patients: 35</div>
-//               <div className="bg-gray-100 p-4 rounded shadow">Discharged: 8</div>
-//             </div>
-//           </>
-//         )}
-
-//         {activeView === "register" && (
-//           <>
-//             <h1 className="text-2xl font-bold mb-4">Register New Patient</h1>
-//             <form className="max-w-lg p-4 bg-white rounded shadow-md space-y-4">
-//               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-//                 <input type="text" placeholder="First Name" className="border p-2 rounded" />
-//                 <input type="text" placeholder="Middle Name" className="border p-2 rounded" />
-//                 <input type="text" placeholder="Last Name" className="border p-2 rounded" />
-//               </div>
-//               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-//                 <input type="date" placeholder="Date of Birth" className="border p-2 rounded" />
-//                 <select className="border p-2 rounded">
-//                   <option>Gender</option>
-//                   <option>Male</option>
-//                   <option>Female</option>
-//                   <option>Other</option>
-//                 </select>
-//               </div>
-//               <input type="text" placeholder="Phone Number" className="border p-2 rounded w-full" />
-//               <textarea placeholder="Address" className="border p-2 rounded w-full"></textarea>
-//               <select className="border p-2 rounded w-full">
-//                 <option>Hospital Name</option>
-//                 <option>Hospital A</option>
-//                 <option>Hospital B</option>
-//               </select>
-//               <button type="submit" className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition">
-//                 Register Patient
-//               </button>
-//             </form>
-//           </>
-//         )}
-
-//         {activeView === "queue" && (
-//           <>
-//             <h1 className="text-2xl font-bold mb-4">Patient Queue</h1>
-//             <div className="overflow-x-auto">
-//               <table className="w-full border-collapse border border-gray-300">
-//                 <thead className="bg-gray-200">
-//                   <tr>
-//                     <th className="border p-2">First Name</th>
-//                     <th className="border p-2">Middle Name</th>
-//                     <th className="border p-2">Last Name</th>
-//                     <th className="border p-2">Hospital</th>
-//                     <th className="border p-2">Registration Date</th>
-//                     <th className="border p-2">Status</th>
-//                     <th className="border p-2">Actions</th>
-//                   </tr>
-//                 </thead>
-//                 <tbody>
-//                   {patients.map((p) => (
-//                     <tr key={p.id}>
-//                       <td className="border p-2">{p.firstName}</td>
-//                       <td className="border p-2">{p.middleName}</td>
-//                       <td className="border p-2">{p.lastName}</td>
-//                       <td className="border p-2">{p.hospital}</td>
-//                       <td className="border p-2">{p.date}</td>
-//                       <td className="border p-2">{p.status}</td>
-//                       <td className="border p-2">
-//                         <button className="bg-blue-500 text-white px-2 py-1 rounded mr-2">Send to Triage</button>
-//                         <button className="bg-gray-500 text-white px-2 py-1 rounded">View</button>
-//                       </td>
-//                     </tr>
-//                   ))}
-//                 </tbody>
-//               </table>
-//             </div>
-//           </>
-//         )}
-
-//         {activeView === "search" && <h1 className="text-2xl font-bold">Search Patient</h1>}
-//         {activeView === "reports" && <h1 className="text-2xl font-bold">Reports</h1>}
-//       </main>
-//     </div>
-//   );
-// }
-
-import React, { useEffect, useState } from "react";
-
-const CardOfficeDashboard = () => {
-  const [admin, setAdmin] = useState(null);
+export default function CardOfficeDashboard() {
+  const [user, setUser] = useState(null);
+  const [activeTab, setActiveTab] = useState("register");
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const storedAdmin = localStorage.getItem("admin");
-    if (storedAdmin) {
-      setAdmin(JSON.parse(storedAdmin));
-    }
-  }, []);
+    const fetchProfile = async () => {
+      try {
+        const data = await api("/auth/me");
+        setUser(data.user);
+      } catch (err) {
+        console.error("Failed to fetch profile", err);
+        const storedUser = localStorage.getItem("user");
+        if (storedUser) {
+          setUser(JSON.parse(storedUser));
+        } else {
+          navigate("/login");
+        }
+      }
+    };
+    fetchProfile();
+  }, [navigate]);
 
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Card Office Dashboard</h1>
+  const handleLogout = () => {
+    localStorage.clear();
+    navigate("/login");
+  };
 
-      {admin ? (
-        <div className="bg-green-50 p-4 rounded-lg shadow-md w-full max-w-md space-y-2">
-          <p>
-            <span className="font-semibold">First Name:</span> {admin.first_name}
-          </p>
-          <p>
-            <span className="font-semibold">Hospital Name:</span> {admin.hospital_name}
-          </p>
-        </div>
-      ) : (
-        <p>Loading admin info...</p>
-      )}
+  if (!user) return (
+    <div className="h-screen w-screen flex items-center justify-center bg-slate-50">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-12 h-12 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
+        <p className="font-bold text-slate-600 tracking-tight">Loading Card Office...</p>
+      </div>
     </div>
   );
-};
 
-export default CardOfficeDashboard;
+  return (
+    <div className="flex h-screen bg-slate-50 font-sans">
+      {/* Sidebar */}
+      <aside className="w-72 bg-slate-900 text-white flex flex-col p-6">
+        <div className="flex items-center gap-3 mb-10 px-2">
+          <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg">
+            <FaAddressCard className="text-xl" />
+          </div>
+          <span className="font-bold text-xl tracking-tight">RegiCare</span>
+        </div>
 
+        <nav className="flex-1 space-y-2">
+          <SidebarItem 
+            icon={<FaUserPlus />} 
+            label="New Registration" 
+            active={activeTab === "register"} 
+            onClick={() => setActiveTab("register")} 
+          />
+          <SidebarItem 
+            icon={<FaRegAddressBook />} 
+            label="Patient Records" 
+            active={activeTab === "records"} 
+            onClick={() => setActiveTab("records")} 
+          />
+          <SidebarItem 
+            icon={<FaSearch />} 
+            label="Search Patient" 
+            active={activeTab === "search"} 
+            onClick={() => setActiveTab("search")} 
+          />
+          <SidebarItem 
+            icon={<FaClipboardCheck />} 
+            label="Daily Reports" 
+            active={activeTab === "reports"} 
+            onClick={() => setActiveTab("reports")} 
+          />
+        </nav>
+
+        <div className="mt-auto space-y-4">
+          <div className="bg-slate-800/50 p-4 rounded-2xl border border-white/5">
+            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Assigned Office</p>
+            <p className="text-sm font-bold truncate">{user.region} Office</p>
+          </div>
+          <button 
+            onClick={handleLogout}
+            className="flex items-center gap-3 w-full p-4 rounded-xl hover:bg-red-500/10 text-red-400 transition-colors font-semibold"
+          >
+            <FaSignOutAlt /> Logout
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col overflow-hidden">
+        <header className="h-20 bg-white border-b border-slate-200 px-8 flex items-center justify-between">
+          <h2 className="text-lg font-bold text-slate-800">Card Office Operations</h2>
+          <div className="flex items-center gap-4">
+            <div className="text-right">
+              <p className="text-sm font-bold text-slate-900">{user.firstName} {user.lastName}</p>
+              <p className="text-[10px] font-black text-blue-600 uppercase tracking-wide">Registration Specialist</p>
+            </div>
+          </div>
+        </header>
+
+        <div className="flex-1 overflow-y-auto p-8">
+          {activeTab === "register" && (
+            <div className="max-w-4xl animate-fade-in">
+              <div className="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
+                <div className="bg-gradient-to-r from-emerald-600 to-teal-700 p-8 text-white">
+                  <h3 className="text-2xl font-black flex items-center gap-3">
+                    <FaHospitalUser /> Patient Intake Form
+                  </h3>
+                  <p className="text-emerald-50 text-sm mt-1 opacity-80">Please ensure all identity documents are verified before submission.</p>
+                </div>
+                
+                <form className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <InputField label="First Name" placeholder="e.g. Abebe" />
+                  <InputField label="Middle Name" placeholder="e.g. Bekele" />
+                  <InputField label="Last Name" placeholder="e.g. Chala" />
+                  <InputField label="Date of Birth" type="date" />
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-700 ml-1">Gender</label>
+                    <select className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none transition bg-white">
+                      <option>Female</option>
+                      <option>Male</option>
+                      <option>Other</option>
+                    </select>
+                  </div>
+
+                  <InputField label="Identification Number (ID)" placeholder="e.g. ID-88291" />
+                  
+                  <div className="md:col-span-2 space-y-2">
+                    <label className="text-sm font-bold text-slate-700 ml-1">Reason for Visit</label>
+                    <textarea 
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none transition min-h-[100px]"
+                      placeholder="Enter a brief clinical reason for visitation..."
+                    />
+                  </div>
+
+                  <div className="md:col-span-2 flex justify-end gap-3 pt-4">
+                    <button type="button" className="px-8 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 transition">Clear Form</button>
+                    <button disabled className="px-10 py-3 bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition active:scale-95 disabled:opacity-50">
+                      Print Hospital Card
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "records" && (
+            <div className="bg-white rounded-3xl p-12 border-2 border-dashed border-slate-200 text-center animate-fade-in">
+              <FaNotesMedical className="text-6xl text-slate-200 mx-auto mb-4" />
+              <h3 className="text-xl font-bold text-slate-800">Patient Database</h3>
+              <p className="text-slate-500 mt-2 max-w-sm mx-auto">Access and manage full medical history and administrative records for all registered patients.</p>
+              <button onClick={() => setActiveTab("register")} className="mt-6 text-emerald-600 font-bold hover:underline">Return to registration</button>
+            </div>
+          )}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+function SidebarItem({ icon, label, active, onClick }) {
+  return (
+    <button 
+      onClick={onClick}
+      className={`flex items-center gap-4 w-full p-4 rounded-2xl transition-all duration-200 ${active ? "bg-white/10 text-emerald-400 shadow-inner" : "text-slate-400 hover:bg-white/5 hover:text-white"}`}
+    >
+      <div className="text-xl">{icon}</div>
+      <span className="font-bold">{label}</span>
+    </button>
+  );
+}
+
+function InputField({ label, ...props }) {
+  return (
+    <div className="space-y-2">
+      <label className="text-sm font-bold text-slate-700 ml-1">{label}</label>
+      <input 
+        {...props} 
+        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none transition" 
+      />
+    </div>
+  );
+}

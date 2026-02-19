@@ -1,200 +1,36 @@
-// import { useState, useEffect } from 'react';
-// import { api } from '../api';
-
-// export default function FederalAdmin() {
-//   const [federalList, setFederalList] = useState([]);
-//   const [structure, setStructure] = useState([]);
-//   const [name, setName] = useState('');
-//   const [federalId, setFederalId] = useState('');
-//   const [message, setMessage] = useState({ type: '', text: '' });
-//   const [loading, setLoading] = useState(false);
-//   const [tab, setTab] = useState('list'); // list | add | addRegional | structure
-
-//   async function loadList() {
-//     try {
-//       const data = await api('/federal');
-//       setFederalList(data.data || []);
-//     } catch (e) {
-//       setMessage({ type: 'error', text: e.message });
-//     }
-//   }
-
-//   async function loadStructure() {
-//     try {
-//       const data = await api('/federal/structure');
-//       setStructure(data.data || []);
-//     } catch (e) {
-//       setMessage({ type: 'error', text: e.message });
-//     }
-//   }
-
-//   useEffect(() => {
-//     loadList();
-//   }, []);
-
-//   useEffect(() => {
-//     if (tab === 'structure') loadStructure();
-//   }, [tab]);
-
-//   async function handleAdd(e) {
-//     e.preventDefault();
-//     if (!name.trim()) return;
-//     setLoading(true);
-//     setMessage({ type: '', text: '' });
-//     try {
-//       await api('/federal', { method: 'POST', body: { name: name.trim() } });
-//       setMessage({ type: 'success', text: 'Federal level added.' });
-//       setName('');
-//       loadList();
-//     } catch (err) {
-//       setMessage({ type: 'error', text: err.message });
-//     } finally {
-//       setLoading(false);
-//     }
-//   }
-
-//   const [regionalName, setRegionalName] = useState('');
-//   async function handleAddRegional(e) {
-//     e.preventDefault();
-//     if (!regionalName.trim()) return;
-//     setLoading(true);
-//     setMessage({ type: '', text: '' });
-//     try {
-//       await api('/federal/regions', { method: 'POST', body: { name: regionalName.trim(), federal_id: federalId || null } });
-//       setMessage({ type: 'success', text: 'Regional level added. You can now add Regional admins and assign them to this region.' });
-//       setRegionalName('');
-//       loadStructure();
-//     } catch (err) {
-//       setMessage({ type: 'error', text: err.message });
-//     } finally {
-//       setLoading(false);
-//     }
-//   }
-
-//   return (
-//     <div className="max-w-4xl mx-auto p-6">
-//       <h1 className="text-2xl font-bold text-slate-800 mb-2">Federal Admin</h1>
-//       <p className="text-slate-600 text-sm mb-6">Manage federal level and view federal structure (regions).</p>
-//       <nav className="flex gap-2 mb-6">
-//         <button
-//           onClick={() => setTab('list')}
-//           className={`px-4 py-2 rounded-lg font-medium ${tab === 'list' ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-700'}`}
-//         >
-//           List
-//         </button>
-//         <button
-//           onClick={() => setTab('add')}
-//           className={`px-4 py-2 rounded-lg font-medium ${tab === 'add' ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-700'}`}
-//         >
-//           Add Federal
-//         </button>
-//         <button
-//           onClick={() => setTab('addRegional')}
-//           className={`px-4 py-2 rounded-lg font-medium ${tab === 'addRegional' ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-700'}`}
-//         >
-//           Add Regional
-//         </button>
-//         <button
-//           onClick={() => setTab('structure')}
-//           className={`px-4 py-2 rounded-lg font-medium ${tab === 'structure' ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-700'}`}
-//         >
-//           Federal Structure
-//         </button>
-//       </nav>
-//       {message.text && (
-//         <div className={`mb-4 p-3 rounded-lg text-sm ${message.type === 'error' ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}>
-//           {message.text}
-//         </div>
-//       )}
-//       {tab === 'list' && (
-//         <ul className="bg-white rounded-lg border border-slate-200 divide-y">
-//           {federalList.length === 0 && <li className="p-4 text-slate-500">No federal entries yet.</li>}
-//           {federalList.map((f) => (
-//             <li key={f.federal_id} className="p-4">{f.name}</li>
-//           ))}
-//         </ul>
-//       )}
-//       {tab === 'add' && (
-//         <form onSubmit={handleAdd} className="bg-white rounded-lg border border-slate-200 p-6">
-//           <label className="block text-slate-700 font-medium mb-1">Name</label>
-//           <input
-//             value={name}
-//             onChange={(e) => setName(e.target.value)}
-//             className="w-full border border-slate-300 rounded-lg px-4 py-2 mb-4"
-//             placeholder="Federal level name"
-//           />
-//           <button type="submit" disabled={loading} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50">
-//             Add
-//           </button>
-//         </form>
-//       )}
-//       {tab === 'addRegional' && (
-//         <form onSubmit={handleAddRegional} className="bg-white rounded-lg border border-slate-200 p-6">
-//           <h2 className="font-semibold text-slate-800 mb-4">Add Regional level (so you can assign Regional admins to it)</h2>
-//           <label className="block text-slate-700 font-medium mb-1">Regional name *</label>
-//           <input
-//             value={regionalName}
-//             onChange={(e) => setRegionalName(e.target.value)}
-//             className="w-full border border-slate-300 rounded-lg px-4 py-2 mb-4"
-//             placeholder="e.g. Oromia, Amhara"
-//           />
-//           <label className="block text-slate-700 font-medium mb-1">Federal ID (optional)</label>
-//           <input
-//             type="number"
-//             value={federalId}
-//             onChange={(e) => setFederalId(e.target.value)}
-//             className="w-full border border-slate-300 rounded-lg px-4 py-2 mb-4"
-//             placeholder="Link to federal level"
-//           />
-//           <button type="submit" disabled={loading} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50">
-//             Add Regional
-//           </button>
-//         </form>
-//       )}
-//       {tab === 'structure' && (
-//         <div className="bg-white rounded-lg border border-slate-200 p-6">
-//           <h2 className="font-semibold text-slate-800 mb-4">Federal → Regions</h2>
-//           {structure.length === 0 && <p className="text-slate-500">No structure data.</p>}
-//           <ul className="space-y-4">
-//             {structure.map((f) => (
-//               <li key={f.federal_id} className="border-l-2 border-blue-200 pl-4">
-//                 <span className="font-medium">{f.name}</span>
-//                 {f.RegionalLevels?.length > 0 && (
-//                   <ul className="mt-2 ml-4 text-slate-600">
-//                     {f.RegionalLevels.map((r) => (
-//                       <li key={r.regional_id}>→ {r.name}</li>
-//                     ))}
-//                   </ul>
-//                 )}
-//               </li>
-//             ))}
-//           </ul>
-//         </div>
-//       )}
-//     </div>
-//   );
-// }
- 
-
-import { useState } from "react";
-import axios from "axios";
-
-const ETHIOPIA_REGIONS = [
-  "Tigray",
-  "Afar",
-  "Amhara",
-  "Oromia",
-  "Somali",
-  "Benishangul-Gumuz",
-  "SNNPR",
-  "Gambela",
-  "Harari",
-  "Addis Ababa",
-  "Dire Dawa",
-];
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { api, register } from "../api";
+import { FaUserPlus, FaUsers, FaGlobe, FaChevronRight, FaSignOutAlt } from "react-icons/fa";
 
 export default function FederalAdmin() {
-  const token = localStorage.getItem("token");
+  const navigate = useNavigate();
+  const [admin, setAdmin] = useState(null);
+  const [activeTab, setActiveTab] = useState("list");
+  const [regionalAdmins, setRegionalAdmins] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const data = await api("/auth/me");
+        setAdmin(data.admin);
+      } catch (err) {
+        console.error("Failed to fetch profile", err);
+        const storedAdmin = localStorage.getItem("admin");
+        if (storedAdmin) setAdmin(JSON.parse(storedAdmin));
+      }
+    };
+    fetchProfile();
+  }, []);
+
+  const ETHIOPIA_REGIONS = [
+    "Tigray", "Afar", "Amhara", "Oromia", "Somali",
+    "Benishangul-Gumuz", "SNNPR", "Gambela", "Harari",
+    "Addis Ababa", "Dire Dawa", "Sidama", "South West Ethiopia"
+  ];
 
   const [formData, setFormData] = useState({
     first_name: "",
@@ -203,14 +39,14 @@ export default function FederalAdmin() {
     email: "",
     phone_number: "",
     password: "",
-    hospital_name: "",
+    hospital_name: "Regional Office",
     service_name: "Public",
     sex: "Male",
     age: "",
-    kebele: "",
-    woreda: "",
-    zone: "",
     region: "",
+    woreda: "N/A",
+    zone: "N/A",
+    kebele: "N/A"
   });
 
   const handleChange = (e) => {
@@ -219,86 +55,202 @@ export default function FederalAdmin() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setError("");
+    setSuccess("");
 
     try {
-      await axios.post(
-        "http://localhost:5000/api/auth/register",
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      alert("Regional Admin Added Successfully");
+      const token = localStorage.getItem("token");
+      await register(formData, token);
+      setSuccess("Regional Admin added successfully!");
+      setFormData({
+        ...formData,
+        first_name: "",
+        middle_name: "",
+        last_name: "",
+        email: "",
+        phone_number: "",
+        password: "",
+        age: "",
+        region: ""
+      });
+      fetchAdmins();
     } catch (err) {
-      alert(err.response?.data?.message || "Error");
+      setError(err.message || "Failed to add regional admin");
+    } finally {
+      setLoading(false);
     }
   };
 
+  const fetchAdmins = async () => {
+    try {
+      const data = await api("/admin"); // Assuming there's a route to list admins
+      // Filter regional admins if possible, or just show all
+      setRegionalAdmins(data || []);
+    } catch (err) {
+      console.error("Failed to fetch admins", err);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("admin");
+    navigate("/login");
+  };
+
+  useEffect(() => {
+    if (activeTab === "list") {
+      fetchAdmins();
+    }
+  }, [activeTab]);
+
+  if (!admin) return <div className="p-12 text-center text-slate-500 font-bold animate-pulse">Loading Federal Profile...</div>;
+
   return (
-    <div className="p-6 max-w-lg">
-      <h2 className="text-xl font-bold mb-4">
-        Add Regional Admin
-      </h2>
-
-      <form onSubmit={handleSubmit} className="space-y-3">
-
-        <input name="first_name" placeholder="First Name"
-          onChange={handleChange} required className="border p-2 w-full" />
-
-        <input name="middle_name" placeholder="Middle Name"
-          onChange={handleChange} required className="border p-2 w-full" />
-
-        <input name="last_name" placeholder="Last Name"
-          onChange={handleChange} required className="border p-2 w-full" />
-
-        <input type="email" name="email" placeholder="Email"
-          onChange={handleChange} required className="border p-2 w-full" />
-
-        <input name="phone_number" placeholder="Phone"
-          onChange={handleChange} className="border p-2 w-full" />
-
-        <input type="password" name="password" placeholder="Password"
-          onChange={handleChange} required className="border p-2 w-full" />
-
-        <input type="number" name="age" placeholder="Age"
-          onChange={handleChange} className="border p-2 w-full" />
-
-        {/* Gender */}
-        <select name="sex"
-          onChange={handleChange}
-          className="border p-2 w-full">
-          <option value="Male">Male</option>
-          <option value="Female">Female</option>
-          <option value="Other">Other</option>
-        </select>
-
-        {/* Region Dropdown */}
-        <select
-          name="region"
-          onChange={handleChange}
-          required
-          className="border p-2 w-full"
-        >
-          <option value="">Select Region</option>
-          {ETHIOPIA_REGIONS.map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
-          ))}
-        </select>
-
+    <div className="max-w-6xl mx-auto p-6 animate-fade-in">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">Federal Admin Dashboard</h1>
+          <p className="text-slate-500 mt-1">
+            Welcome, {admin ? `${admin.first_name} ${admin.last_name}` : "Administrator"} • Global health management and regional oversight
+          </p>
+        </div>
+        <div className="flex bg-white rounded-xl shadow-sm border border-slate-200 p-1">
+          <button
+            onClick={() => setActiveTab("list")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${activeTab === "list" ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-50"}`}
+          >
+            <FaUsers /> Regional Admins
+          </button>
+          <button
+            onClick={() => setActiveTab("add")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${activeTab === "add" ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-50"}`}
+          >
+            <FaUserPlus /> Add Regional Admin
+          </button>
+        </div>
         <button
-          type="submit"
-          className="bg-blue-600 text-white p-2 w-full"
+          onClick={handleLogout}
+          className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg border border-red-100 hover:bg-red-100 transition-colors font-semibold"
         >
-          Add Regional Admin
+          <FaSignOutAlt /> Logout
         </button>
+      </div>
 
-      </form>
+      {activeTab === "add" ? (
+        <div className="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
+          <div className="bg-blue-600 px-6 py-4">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <FaGlobe /> Register New Regional Administrator
+            </h2>
+            <p className="text-blue-100 text-sm">Assign oversight for a specific region within Ethiopia</p>
+          </div>
+          
+          <form onSubmit={handleSubmit} className="p-8">
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-lg flex items-center gap-3 animate-shake">
+                <span className="text-lg font-bold">!</span> {error}
+              </div>
+            )}
+            {success && (
+              <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 rounded-lg flex items-center gap-3">
+                <span className="text-lg font-bold">✓</span> {success}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="space-y-1">
+                <label className="text-sm font-semibold text-slate-700 ml-1">First Name</label>
+                <input name="first_name" value={formData.first_name} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="Enter first name" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-semibold text-slate-700 ml-1">Middle Name</label>
+                <input name="middle_name" value={formData.middle_name} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="Enter middle name" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-semibold text-slate-700 ml-1">Last Name</label>
+                <input name="last_name" value={formData.last_name} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="Enter last name" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-semibold text-slate-700 ml-1">Email Address</label>
+                <input type="email" name="email" value={formData.email} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="email@example.com" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-semibold text-slate-700 ml-1">Phone Number</label>
+                <input name="phone_number" value={formData.phone_number} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="+251 ..." />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-semibold text-slate-700 ml-1">Password</label>
+                <input type="password" name="password" value={formData.password} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="••••••••" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-semibold text-slate-700 ml-1">Age</label>
+                <input type="number" name="age" value={formData.age} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="Enter age" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-semibold text-slate-700 ml-1">Gender</label>
+                <select name="sex" value={formData.sex} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition bg-white">
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-semibold text-slate-700 ml-1">Assigned Region</label>
+                <select name="region" value={formData.region} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition bg-white">
+                  <option value="">Select Region</option>
+                  {ETHIOPIA_REGIONS.map((r) => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="mt-8 flex justify-end">
+              <button
+                type="submit"
+                disabled={loading}
+                className={`px-8 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg hover:bg-blue-700 transform transition active:scale-95 flex items-center gap-2 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                {loading ? 'Processing...' : <>Add Regional Admin <FaChevronRight /></>}
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th className="px-6 py-4 text-sm font-semibold text-slate-700">Name</th>
+                  <th className="px-6 py-4 text-sm font-semibold text-slate-700">Email</th>
+                  <th className="px-6 py-4 text-sm font-semibold text-slate-700">Region</th>
+                  <th className="px-6 py-4 text-sm font-semibold text-slate-700">Phone</th>
+                  <th className="px-6 py-4 text-sm font-semibold text-slate-700">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {regionalAdmins.filter(a => a.role === "Regional_Admin").length > 0 ? (
+                  regionalAdmins.filter(a => a.role === "Regional_Admin").map((admin) => (
+                    <tr key={admin.id} className="hover:bg-slate-50 transition">
+                      <td className="px-6 py-4 font-medium text-slate-900">{admin.first_name} {admin.last_name}</td>
+                      <td className="px-6 py-4 text-slate-600">{admin.email}</td>
+                      <td className="px-6 py-4"><span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-bold">{admin.region}</span></td>
+                      <td className="px-6 py-4 text-slate-600">{admin.phone_number}</td>
+                      <td className="px-6 py-4 text-green-600 font-bold text-sm">Active</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="5" className="px-6 py-10 text-center text-slate-500 italic">No regional administrators found.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-

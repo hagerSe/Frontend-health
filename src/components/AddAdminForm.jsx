@@ -18,10 +18,23 @@ const ASSIGNMENT_LABEL = {
 };
 
 export default function AddAdminForm({ onSuccess, onCancel }) {
+  const [admin, setAdmin] = useState(null);
   const token = localStorage.getItem('token');
-  const admin = JSON.parse(localStorage.getItem('admin') || '{}');
-  const childLabel = CHILD_ROLE_LABEL[admin.role] || 'Admin';
-  const assignmentLabel = ASSIGNMENT_LABEL[admin.role];
+  
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const data = await api("/auth/me");
+        setAdmin(data.admin);
+      } catch (err) {
+        console.error("Failed to fetch profile", err);
+      }
+    };
+    fetchProfile();
+  }, []);
+
+  const childLabel = admin ? (CHILD_ROLE_LABEL[admin.role] || 'Admin') : '...';
+  const assignmentLabel = admin ? ASSIGNMENT_LABEL[admin.role] : null;
 
   const [form, setForm] = useState({
     first_name: '',
@@ -46,7 +59,7 @@ export default function AddAdminForm({ onSuccess, onCancel }) {
   useEffect(() => {
     let cancelled = false;
     async function loadOptions() {
-      if (!admin.role || admin.role === 'Hospital_Admin') {
+      if (!admin || !admin.role || admin.role === 'Hospital_Admin') {
         setOptionsLoading(false);
         return;
       }
@@ -81,7 +94,7 @@ export default function AddAdminForm({ onSuccess, onCancel }) {
     }
     loadOptions();
     return () => { cancelled = true; };
-  }, [admin.role]);
+  }, [admin?.role]);
 
   function handleChange(e) {
     const { name, value } = e.target;
@@ -89,6 +102,7 @@ export default function AddAdminForm({ onSuccess, onCancel }) {
   }
 
   function setAssignment(value) {
+    if (!admin) return;
     if (admin.role === 'Federal_Admin') setForm((f) => ({ ...f, region: value }));
     else if (admin.role === 'Regional_Admin') setForm((f) => ({ ...f, zone: value }));
     else if (admin.role === 'Zone_Admin') setForm((f) => ({ ...f, woreda: value }));
@@ -97,6 +111,7 @@ export default function AddAdminForm({ onSuccess, onCancel }) {
   }
 
   function getAssignmentValue() {
+    if (!admin) return '';
     if (admin.role === 'Federal_Admin') return form.region;
     if (admin.role === 'Regional_Admin') return form.zone;
     if (admin.role === 'Zone_Admin') return form.woreda;
@@ -153,7 +168,7 @@ export default function AddAdminForm({ onSuccess, onCancel }) {
           <label className="block text-slate-700 text-sm font-medium mb-1">Password *</label>
           <input type="password" name="password" value={form.password} onChange={handleChange} required className="w-full border border-slate-300 rounded-lg px-3 py-2" />
         </div>
-        {admin.role && admin.role !== 'Hospital_Admin' && assignmentLabel && (
+        {admin && admin.role !== 'Hospital_Admin' && assignmentLabel && (
           <div>
             <label className="block text-slate-700 text-sm font-medium mb-1">{assignmentLabel}</label>
             {optionsLoading ? (

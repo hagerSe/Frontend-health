@@ -165,7 +165,7 @@
 
 
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { login } from '../api'; // your shared login API
 import { FaUserCircle, FaLock } from "react-icons/fa";
 
@@ -284,6 +284,10 @@ console.log("login in data,", JSON.stringify(data, null, 2))
         >
           {loading ? 'Signing In...' : 'Sign In'}
         </button>
+
+        <p className="text-sm text-center mt-4">
+          Don't have an account? <Link to="/register" className="text-blue-800 font-bold hover:underline">Register here</Link>
+        </p>
       </form>
     </div>
   );
