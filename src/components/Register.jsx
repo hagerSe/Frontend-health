@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { register } from '../api';
+import { authService } from '../services/authService';
 import { FaUserPlus, FaEnvelope, FaLock, FaUser, FaPhone } from "react-icons/fa";
 
 export default function Register() {
@@ -30,11 +30,11 @@ export default function Register() {
     setLoading(true);
 
     try {
-      await register(form);
+      await authService.adminRegister(form);
       alert('Registration successful! Please login.');
       navigate('/login');
     } catch (err) {
-      setError(err.message || 'Registration failed');
+      setError(err.response?.data?.message || err.message || 'Registration failed');
     } finally {
       setLoading(false);
     }
