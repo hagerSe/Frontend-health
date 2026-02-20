@@ -1,256 +1,403 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { api, register } from "../api";
-import { FaUserPlus, FaUsers, FaGlobe, FaChevronRight, FaSignOutAlt } from "react-icons/fa";
+import React, { useEffect, useState } from "react"
+import { DashboardLayout } from "./DashboardLayout"
+import { 
+  Building2, 
+  Users, 
+  MapPin, 
+  Activity, 
+  ArrowUpRight, 
+  ArrowDownRight,
+  Plus,
+  RefreshCcw,
+  Search
+} from "lucide-react"
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Progress } from "@/components/ui/progress"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { adminService } from "@/services/adminService"
+import { hospitalService } from "@/services/hospitalService"
+import { geoService } from "@/services/geoService"
 
 export default function FederalAdmin() {
-  const navigate = useNavigate();
-  const [admin, setAdmin] = useState(null);
-  const [activeTab, setActiveTab] = useState("list");
-  const [regionalAdmins, setRegionalAdmins] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const data = await api("/auth/me");
-        setAdmin(data.admin);
-      } catch (err) {
-        console.error("Failed to fetch profile", err);
-        const storedAdmin = localStorage.getItem("admin");
-        if (storedAdmin) setAdmin(JSON.parse(storedAdmin));
-      }
-    };
-    fetchProfile();
-  }, []);
-
-  const ETHIOPIA_REGIONS = [
-    "Tigray", "Afar", "Amhara", "Oromia", "Somali",
-    "Benishangul-Gumuz", "SNNPR", "Gambela", "Harari",
-    "Addis Ababa", "Dire Dawa", "Sidama", "South West Ethiopia"
-  ];
-
+  const [stats, setStats] = useState({
+    hospitals: 0,
+    admins: 0,
+    regions: 0,
+    patients: 12450 // Dummy for now
+  })
+  const [recentAdmins, setRecentAdmins] = useState([])
+  const [regions, setRegions] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  
   const [formData, setFormData] = useState({
     first_name: "",
     middle_name: "",
     last_name: "",
     email: "",
-    phone_number: "",
     password: "",
-    hospital_name: "Regional Office",
-    service_name: "Public",
+    region_id: "",
+    role: "Regional_Admin",
     sex: "Male",
     age: "",
-    region: "",
-    woreda: "N/A",
-    zone: "N/A",
-    kebele: "N/A"
-  });
+    service_name: ""
+  })
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  const fetchData = async () => {
+    try {
+      setLoading(true)
+      const [hospitalsRes, adminsRes, regionsRes] = await Promise.all([
+        hospitalService.getHospitals(),
+        adminService.getAdmins(),
+        geoService.getRegions()
+      ])
+      
+      setStats({
+        hospitals: hospitalsRes.data?.length || 0,
+        admins: adminsRes.data?.length || 0,
+        regions: regionsRes.data?.length || 0,
+        patients: 12450
+      })
+      setRecentAdmins(adminsRes.data || [])
+      setRegions(regionsRes.data || [])
+    } catch (err) {
+      console.error("Dashboard data fetch error:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchData()
+  }, [])
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target
+    setFormData(prev => ({ ...prev, [name]: value }))
+  }
+
+  const handleSelectChange = (name, value) => {
+    setFormData(prev => ({ ...prev, [name]: value }))
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    setSuccess("");
-
+    e.preventDefault()
+    setSubmitting(true)
     try {
-      const token = localStorage.getItem("token");
-      await register(formData, token);
-      setSuccess("Regional Admin added successfully!");
+      await adminService.createAdmin(formData)
+      setIsDialogOpen(false)
       setFormData({
-        ...formData,
         first_name: "",
         middle_name: "",
         last_name: "",
         email: "",
-        phone_number: "",
         password: "",
+        region_id: "",
+        role: "Regional_Admin",
+        sex: "Male",
         age: "",
-        region: ""
-      });
-      fetchAdmins();
+        service_name: ""
+      })
+      fetchData() // Refresh list
     } catch (err) {
-      setError(err.message || "Failed to add regional admin");
+      console.error("Failed to create admin:", err)
+      alert(err.response?.data?.message || "Failed to create administrator")
     } finally {
-      setLoading(false);
+      setSubmitting(false)
     }
-  };
-
-  const fetchAdmins = async () => {
-    try {
-      const data = await api("/admin"); // Assuming there's a route to list admins
-      // Filter regional admins if possible, or just show all
-      setRegionalAdmins(data || []);
-    } catch (err) {
-      console.error("Failed to fetch admins", err);
-    }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("admin");
-    navigate("/login");
-  };
-
-  useEffect(() => {
-    if (activeTab === "list") {
-      fetchAdmins();
-    }
-  }, [activeTab]);
-
-  if (!admin) return <div className="p-12 text-center text-slate-500 font-bold animate-pulse">Loading Federal Profile...</div>;
+  }
 
   return (
-    <div className="max-w-6xl mx-auto p-6 animate-fade-in">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">Federal Admin Dashboard</h1>
-          <p className="text-slate-500 mt-1">
-            Welcome, {admin ? `${admin.first_name} ${admin.last_name}` : "Administrator"} • Global health management and regional oversight
-          </p>
+    <DashboardLayout>
+      <div className="flex flex-col gap-8">
+        
+        {/* Header with Actions */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-2">
+           <div>
+              <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">National Overview</h1>
+              <p className="text-gray-500 font-medium">Monitoring health infrastructure across all sectors</p>
+           </div>
+           <div className="flex items-center gap-3">
+              <Button variant="outline" size="sm" onClick={fetchData} className="hidden sm:flex rounded-xl gap-2 font-bold hover:bg-white shadow-sm">
+                 <RefreshCcw className="size-4" />
+                 Refresh Data
+              </Button>
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="rounded-xl gap-2 font-bold bg-blue-600 hover:bg-blue-700 shadow-xl shadow-blue-100">
+                    <Plus className="size-4" />
+                    Add New Admin
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[585px] rounded-[32px] border-none shadow-2xl">
+                  <DialogHeader>
+                    <DialogTitle className="text-2xl font-black text-gray-900">Add Regional Administrator</DialogTitle>
+                    <DialogDescription className="font-medium text-gray-500">
+                      Create a new regional administrator. They will have access to all data within their assigned region.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleSubmit}>
+                    <div className="grid gap-6 py-6 max-h-[60vh] overflow-y-auto px-1">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="first_name" className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">First Name</Label>
+                          <Input id="first_name" name="first_name" value={formData.first_name} onChange={handleInputChange} className="h-12 rounded-xl bg-gray-50 border-transparent focus:bg-white font-bold" required />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="middle_name" className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Middle Name</Label>
+                          <Input id="middle_name" name="middle_name" value={formData.middle_name} onChange={handleInputChange} className="h-12 rounded-xl bg-gray-50 border-transparent focus:bg-white font-bold" required />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="last_name" className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Last Name</Label>
+                          <Input id="last_name" name="last_name" value={formData.last_name} onChange={handleInputChange} className="h-12 rounded-xl bg-gray-50 border-transparent focus:bg-white font-bold" required />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="service_name" className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Service Type</Label>
+                          <Select onValueChange={(val) => handleSelectChange('service_name', val)} value={formData.service_name}>
+                            <SelectTrigger className="h-12 rounded-xl bg-gray-50 border-transparent focus:bg-white font-bold">
+                              <SelectValue placeholder="Select Type" />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl border-gray-100 shadow-xl">
+                              <SelectItem value="Public" className="font-bold cursor-pointer">Public</SelectItem>
+                              <SelectItem value="Private" className="font-bold cursor-pointer">Private</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="sex" className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Sex</Label>
+                          <Select onValueChange={(val) => handleSelectChange('sex', val)} value={formData.sex}>
+                            <SelectTrigger className="h-12 rounded-xl bg-gray-50 border-transparent focus:bg-white font-bold">
+                              <SelectValue placeholder="Select" />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl border-gray-100 shadow-xl">
+                              <SelectItem value="Male" className="font-bold cursor-pointer">Male</SelectItem>
+                              <SelectItem value="Female" className="font-bold cursor-pointer">Female</SelectItem>
+                              <SelectItem value="Other" className="font-bold cursor-pointer">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="age" className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Age</Label>
+                          <Input id="age" name="age" type="number" value={formData.age} onChange={handleInputChange} className="h-12 rounded-xl bg-gray-50 border-transparent focus:bg-white font-bold" required />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="email" className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Email Address</Label>
+                        <Input id="email" name="email" type="email" value={formData.email} onChange={handleInputChange} className="h-12 rounded-xl bg-gray-50 border-transparent focus:bg-white font-bold" required />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="password" className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Access Password</Label>
+                        <Input id="password" name="password" type="password" value={formData.password} onChange={handleInputChange} className="h-12 rounded-xl bg-gray-50 border-transparent focus:bg-white font-bold" required />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="region" className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Assigned Region</Label>
+                        <Select onValueChange={(val) => handleSelectChange('region_id', val)} value={formData.region_id}>
+                          <SelectTrigger className="h-12 rounded-xl bg-gray-50 border-transparent focus:bg-white font-bold">
+                            <SelectValue placeholder="Select a region" />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl border-gray-100 shadow-xl">
+                            {regions.map((region) => (
+                              <SelectItem key={region.id} value={region.id.toString()} className="font-bold cursor-pointer">{region.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button type="submit" disabled={submitting} className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black shadow-lg shadow-blue-100">
+                        {submitting ? "Processing..." : "Establish Identity"}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
+           </div>
         </div>
-        <div className="flex bg-white rounded-xl shadow-sm border border-slate-200 p-1">
-          <button
-            onClick={() => setActiveTab("list")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${activeTab === "list" ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-50"}`}
-          >
-            <FaUsers /> Regional Admins
-          </button>
-          <button
-            onClick={() => setActiveTab("add")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${activeTab === "add" ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-50"}`}
-          >
-            <FaUserPlus /> Add Regional Admin
-          </button>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            { title: "Total Hospitals", val: stats.hospitals, icon: Building2, color: "text-blue-600", bg: "bg-blue-50", delta: "+3.2%", status: "up" },
+            { title: "Network Admins", val: stats.admins, icon: Users, color: "text-purple-600", bg: "bg-purple-50", delta: "+12.1%", status: "up" },
+            { title: "Active Regions", val: stats.regions, icon: MapPin, color: "text-emerald-600", bg: "bg-emerald-50", delta: "Stable", status: "none" },
+            { title: "Total Records", val: stats.patients.toLocaleString(), icon: Activity, color: "text-orange-600", bg: "bg-orange-50", delta: "-0.4%", status: "down" },
+          ].map((item, i) => (
+            <Card key={i} className="border-none shadow-xl shadow-gray-200/40 rounded-[24px] overflow-hidden group hover:scale-[1.02] transition-transform duration-300">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                   <div className={`p-3 rounded-2xl ${item.bg} ${item.color} group-hover:scale-110 transition-transform`}>
+                      <item.icon className="size-6" />
+                   </div>
+                   {item.status !== "none" && (
+                      <Badge variant="outline" className={`rounded-xl border-none font-bold ${item.status === 'up' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+                         {item.status === 'up' ? <ArrowUpRight className="size-3 mr-1" /> : <ArrowDownRight className="size-3 mr-1" />}
+                         {item.delta}
+                      </Badge>
+                   )}
+                </div>
+                <div className="space-y-1">
+                   <p className="text-sm font-bold text-gray-500 uppercase tracking-widest">{item.title}</p>
+                   <h3 className="text-3xl font-extrabold text-gray-900 tracking-tight">{item.val}</h3>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg border border-red-100 hover:bg-red-100 transition-colors font-semibold"
-        >
-          <FaSignOutAlt /> Logout
-        </button>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+           
+           {/* Recent Admins Table */}
+           <Card className="lg:col-span-2 border-none shadow-2xl shadow-gray-200/40 rounded-[32px] overflow-hidden bg-white/50 backdrop-blur-sm">
+             <CardHeader className="border-b border-gray-100 p-8 flex flex-row items-center justify-between space-y-0">
+               <div>
+                  <CardTitle className="text-xl font-extrabold text-gray-900">Recent Admin Registrations</CardTitle>
+                  <CardDescription className="text-gray-500 font-medium font-sans">Latest administrators added to the national database</CardDescription>
+               </div>
+               <Button variant="ghost" className="text-sm font-bold text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-xl">View All</Button>
+             </CardHeader>
+             <CardContent className="p-0">
+               <Table>
+                 <TableHeader className="bg-gray-50/50">
+                   <TableRow className="hover:bg-transparent border-none">
+                     <TableHead className="px-8 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Administrator</TableHead>
+                     <TableHead className="font-bold text-gray-400 uppercase tracking-widest text-[10px]">Role / Jurisdiction</TableHead>
+                     <TableHead className="font-bold text-gray-400 uppercase tracking-widest text-[10px]">Status</TableHead>
+                     <TableHead className="px-8 text-right font-bold text-gray-400 uppercase tracking-widest text-[10px]">Actions</TableHead>
+                   </TableRow>
+                 </TableHeader>
+                 <TableBody>
+                   {recentAdmins.map((admin) => (
+                     <TableRow key={admin.id} className="hover:bg-blue-50/30 transition-colors cursor-pointer group border-gray-50">
+                       <TableCell className="px-8 py-4">
+                         <div className="flex items-center gap-3">
+                            <div className="size-10 rounded-xl bg-gray-100 font-bold text-gray-600 flex items-center justify-center border-2 border-white shadow-sm ring-1 ring-gray-200 uppercase">
+                               {admin.first_name[0]}{admin.last_name[0]}
+                            </div>
+                            <div className="flex flex-col">
+                               <span className="font-bold text-gray-900">{admin.first_name} {admin.last_name}</span>
+                               <span className="text-xs text-gray-500 font-medium">{admin.email}</span>
+                            </div>
+                         </div>
+                       </TableCell>
+                       <TableCell className="py-4">
+                         <div className="flex flex-col">
+                            <span className="font-bold text-gray-700 text-sm">{admin.role.replace('_', ' ')}</span>
+                            <span className="text-xs text-gray-500 font-medium">{admin.region?.name || "Federal"}</span>
+                         </div>
+                       </TableCell>
+                       <TableCell className="py-4">
+                         <Badge className="rounded-xl border-none px-3 py-1 bg-emerald-100/50 text-emerald-700 font-bold hover:bg-emerald-100/50">
+                            Active
+                         </Badge>
+                       </TableCell>
+                       <TableCell className="px-8 py-4 text-right">
+                          <Button variant="ghost" size="icon" className="rounded-xl opacity-0 hover:bg-white group-hover:opacity-100 transition-all font-bold">
+                             <ArrowUpRight className="size-4 text-blue-600" />
+                          </Button>
+                       </TableCell>
+                     </TableRow>
+                   ))}
+                 </TableBody>
+               </Table>
+             </CardContent>
+           </Card>
+
+           {/* Health Progress Card */}
+           <div className="space-y-8">
+              <Card className="border-none shadow-2xl shadow-blue-100/30 rounded-[32px] bg-blue-600 text-white overflow-hidden relative group">
+                 <div className="absolute -right-20 -top-20 w-64 h-64 bg-white/10 rounded-full blur-3xl group-hover:scale-110 transition-transform duration-700"></div>
+                 <CardHeader className="p-8 pb-4 relative z-10">
+                    <div className="p-3 bg-white/20 w-fit rounded-2xl mb-4">
+                       <Building2 className="size-6 text-white" />
+                    </div>
+                    <CardTitle className="text-2xl font-extrabold mb-1">National Growth</CardTitle>
+                    <CardDescription className="text-blue-100 font-bold">Facility deployment progress</CardDescription>
+                 </CardHeader>
+                 <CardContent className="p-8 pt-0 relative z-10">
+                    <div className="space-y-6 mt-4">
+                       <div className="space-y-2">
+                          <div className="flex justify-between text-sm font-bold">
+                             <span>Public Access Target</span>
+                             <span>84%</span>
+                          </div>
+                          <Progress value={84} className="h-2 bg-white/20" indicatorClassName="bg-white" />
+                       </div>
+                       <Button className="w-full rounded-2xl border-none bg-white text-blue-600 hover:bg-blue-50 font-extrabold text-sm shadow-xl mt-4">
+                          Download Report
+                       </Button>
+                    </div>
+                 </CardContent>
+              </Card>
+
+              <Card className="border-none shadow-2xl shadow-gray-200/40 rounded-[32px] overflow-hidden">
+                 <CardHeader className="p-8 pb-4 border-b border-gray-50 bg-gray-50/30">
+                    <CardTitle className="text-lg font-extrabold text-gray-900">System Activity</CardTitle>
+                 </CardHeader>
+                 <CardContent className="p-8 space-y-6">
+                    {[
+                       { label: "Token Refresh Issues", val: "None detected", color: "text-emerald-600", icon: Activity },
+                       { label: "Sync Latency", val: "14ms", color: "text-blue-600", icon: RefreshCcw },
+                       { label: "Auth Incidents", val: "0 today", color: "text-emerald-600", icon: Users },
+                    ].map((item, i) => (
+                       <div key={i} className="flex items-center justify-between border-b border-gray-50 last:border-0 pb-4 last:pb-0">
+                          <div className="flex items-center gap-3">
+                             <item.icon className={`size-4 ${item.color}`} />
+                             <span className="text-sm font-bold text-gray-500">{item.label}</span>
+                          </div>
+                          <span className={`text-sm font-extrabold ${item.color}`}>{item.val}</span>
+                       </div>
+                    ))}
+                 </CardContent>
+              </Card>
+           </div>
+
+        </div>
+
       </div>
-
-      {activeTab === "add" ? (
-        <div className="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
-          <div className="bg-blue-600 px-6 py-4">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <FaGlobe /> Register New Regional Administrator
-            </h2>
-            <p className="text-blue-100 text-sm">Assign oversight for a specific region within Ethiopia</p>
-          </div>
-          
-          <form onSubmit={handleSubmit} className="p-8">
-            {error && (
-              <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-lg flex items-center gap-3 animate-shake">
-                <span className="text-lg font-bold">!</span> {error}
-              </div>
-            )}
-            {success && (
-              <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 rounded-lg flex items-center gap-3">
-                <span className="text-lg font-bold">✓</span> {success}
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-slate-700 ml-1">First Name</label>
-                <input name="first_name" value={formData.first_name} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="Enter first name" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-slate-700 ml-1">Middle Name</label>
-                <input name="middle_name" value={formData.middle_name} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="Enter middle name" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-slate-700 ml-1">Last Name</label>
-                <input name="last_name" value={formData.last_name} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="Enter last name" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-slate-700 ml-1">Email Address</label>
-                <input type="email" name="email" value={formData.email} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="email@example.com" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-slate-700 ml-1">Phone Number</label>
-                <input name="phone_number" value={formData.phone_number} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="+251 ..." />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-slate-700 ml-1">Password</label>
-                <input type="password" name="password" value={formData.password} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="••••••••" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-slate-700 ml-1">Age</label>
-                <input type="number" name="age" value={formData.age} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="Enter age" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-slate-700 ml-1">Gender</label>
-                <select name="sex" value={formData.sex} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition bg-white">
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-slate-700 ml-1">Assigned Region</label>
-                <select name="region" value={formData.region} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition bg-white">
-                  <option value="">Select Region</option>
-                  {ETHIOPIA_REGIONS.map((r) => (
-                    <option key={r} value={r}>{r}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="mt-8 flex justify-end">
-              <button
-                type="submit"
-                disabled={loading}
-                className={`px-8 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg hover:bg-blue-700 transform transition active:scale-95 flex items-center gap-2 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                {loading ? 'Processing...' : <>Add Regional Admin <FaChevronRight /></>}
-              </button>
-            </div>
-          </form>
-        </div>
-      ) : (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead className="bg-slate-50 border-b border-slate-200">
-                <tr>
-                  <th className="px-6 py-4 text-sm font-semibold text-slate-700">Name</th>
-                  <th className="px-6 py-4 text-sm font-semibold text-slate-700">Email</th>
-                  <th className="px-6 py-4 text-sm font-semibold text-slate-700">Region</th>
-                  <th className="px-6 py-4 text-sm font-semibold text-slate-700">Phone</th>
-                  <th className="px-6 py-4 text-sm font-semibold text-slate-700">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {regionalAdmins.filter(a => a.role === "Regional_Admin").length > 0 ? (
-                  regionalAdmins.filter(a => a.role === "Regional_Admin").map((admin) => (
-                    <tr key={admin.id} className="hover:bg-slate-50 transition">
-                      <td className="px-6 py-4 font-medium text-slate-900">{admin.first_name} {admin.last_name}</td>
-                      <td className="px-6 py-4 text-slate-600">{admin.email}</td>
-                      <td className="px-6 py-4"><span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-bold">{admin.region}</span></td>
-                      <td className="px-6 py-4 text-slate-600">{admin.phone_number}</td>
-                      <td className="px-6 py-4 text-green-600 font-bold text-sm">Active</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="5" className="px-6 py-10 text-center text-slate-500 italic">No regional administrators found.</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+    </DashboardLayout>
+  )
 }

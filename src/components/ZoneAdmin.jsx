@@ -1,16 +1,44 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { api, register } from "../api";
-import { FaUserPlus, FaLayerGroup, FaMapPin, FaChevronRight, FaSignOutAlt } from "react-icons/fa";
+import React, { useEffect, useState } from "react"
+import { DashboardLayout } from "./DashboardLayout"
+import { 
+  Users, 
+  MapPin, 
+  Plus, 
+  Search,
+  Settings,
+  MoreVertical,
+  Mail,
+  UserPlus
+} from "lucide-react"
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { authService } from "@/services/authService"
+import { adminService } from "@/services/adminService"
 
 export default function ZoneAdmin() {
-  const navigate = useNavigate();
-  const [admin, setAdmin] = useState(null);
-  const [activeTab, setActiveTab] = useState("list");
-  const [woredaAdmins, setWoredaAdmins] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [admin, setAdmin] = useState(null)
+  const [activeTab, setActiveTab] = useState("list")
+  const [woredaAdmins, setWoredaAdmins] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState("")
 
   const [formData, setFormData] = useState({
     first_name: "",
@@ -19,46 +47,48 @@ export default function ZoneAdmin() {
     email: "",
     phone_number: "",
     password: "",
-    hospital_name: "Woreda Office",
+    role: "Woreda_Admin",
     service_name: "Public",
     sex: "Male",
     age: "",
-    woreda: "",
-    kebele: "N/A"
-  });
+    woreda_id: ""
+  })
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const data = await api("/auth/me");
-        setAdmin(data.admin);
-      } catch (err) {
-        console.error("Failed to fetch profile", err);
-        const storedAdmin = localStorage.getItem("admin");
-        if (storedAdmin) setAdmin(JSON.parse(storedAdmin));
-      }
-    };
-    fetchProfile();
-  }, []);
+    const userData = authService.getCurrentUser()
+    setAdmin(userData)
+    fetchAdmins()
+  }, [])
+
+  const fetchAdmins = async () => {
+    try {
+      setLoading(true)
+      const data = await adminService.getAdmins({ role: 'Woreda_Admin' })
+      setWoredaAdmins(data.data || [])
+    } catch (err) {
+      console.error("Failed to fetch admins", err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+    setFormData({ ...formData, [e.target.name]: e.target.value })
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    setSuccess("");
+    e.preventDefault()
+    setLoading(true)
+    setError("")
+    setSuccess("")
 
     try {
-      const token = localStorage.getItem("token");
-      await register({
+      await adminService.createAdmin({
         ...formData,
-        region: admin.region,
-        zone: admin.zone
-      }, token);
-      setSuccess("Woreda Admin added successfully!");
+        region_id: admin.region_id,
+        zone_id: admin.zone_id
+      })
+      setSuccess("Woreda Admin added successfully!")
       setFormData({
         ...formData,
         first_name: "",
@@ -68,175 +98,183 @@ export default function ZoneAdmin() {
         phone_number: "",
         password: "",
         age: "",
-        woreda: ""
-      });
-      fetchAdmins();
+        woreda_id: ""
+      })
+      setActiveTab("list")
+      fetchAdmins()
     } catch (err) {
-      setError(err.message || "Failed to add woreda admin");
+      setError(err.response?.data?.message || err.message || "Failed to add woreda admin")
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
-
-  const fetchAdmins = async () => {
-    try {
-      const data = await api("/admin"); 
-      setWoredaAdmins(data || []);
-    } catch (err) {
-      console.error("Failed to fetch admins", err);
-    }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("admin");
-    navigate("/login");
-  };
-
-  useEffect(() => {
-    if (activeTab === "list") {
-      fetchAdmins();
-    }
-  }, [activeTab]);
-
-  if (!admin) return <div className="p-8 text-center text-slate-500">Loading profile...</div>;
+  }
 
   return (
-    <div className="max-w-6xl mx-auto p-6 animate-fade-in">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">{admin.zone} Zone Dashboard</h1>
-          <p className="text-slate-500 mt-1">Managing woreda administrators for {admin.zone} Zone, {admin.region}</p>
-        </div>
-        <div className="flex bg-white rounded-xl shadow-sm border border-slate-200 p-1">
-          <button
-            onClick={() => setActiveTab("list")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${activeTab === "list" ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-50"}`}
-          >
-            <FaLayerGroup /> Woreda Admins
-          </button>
-          <button
-            onClick={() => setActiveTab("add")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${activeTab === "add" ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-50"}`}
-          >
-            <FaUserPlus /> Add Woreda Admin
-          </button>
-        </div>
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg border border-red-100 hover:bg-red-100 transition-colors font-semibold"
-        >
-          <FaSignOutAlt /> Logout
-        </button>
-      </div>
-
-      {activeTab === "add" ? (
-        <div className="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
-          <div className="bg-cyan-600 px-6 py-4">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <FaMapPin /> Register New Woreda Administrator
-            </h2>
-            <p className="text-cyan-100 text-sm">Assign oversight for a specific woreda within {admin.zone}</p>
-          </div>
-          
-          <form onSubmit={handleSubmit} className="p-8">
-            {error && (
-              <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-lg flex items-center gap-3">
-                {error}
-              </div>
-            )}
-            {success && (
-              <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 rounded-lg flex items-center gap-3">
-                {success}
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-slate-700 ml-1">First Name</label>
-                <input name="first_name" value={formData.first_name} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-cyan-500 outline-none transition" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-slate-700 ml-1">Middle Name</label>
-                <input name="middle_name" value={formData.middle_name} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-cyan-500 outline-none transition" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-slate-700 ml-1">Last Name</label>
-                <input name="last_name" value={formData.last_name} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-cyan-500 outline-none transition" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-slate-700 ml-1">Email</label>
-                <input type="email" name="email" value={formData.email} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-cyan-500 outline-none transition" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-slate-700 ml-1">Phone</label>
-                <input name="phone_number" value={formData.phone_number} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-cyan-500 outline-none transition" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-slate-700 ml-1">Password</label>
-                <input type="password" name="password" value={formData.password} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-cyan-500 outline-none transition" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-slate-700 ml-1">Age</label>
-                <input type="number" name="age" value={formData.age} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-cyan-500 outline-none transition" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-slate-700 ml-1">Gender</label>
-                <select name="sex" value={formData.sex} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-cyan-500 outline-none transition bg-white">
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-slate-700 ml-1">Woreda Name</label>
-                <input name="woreda" value={formData.woreda} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-cyan-500 outline-none transition" placeholder="e.g. Gullele" />
-              </div>
-            </div>
-
-            <div className="mt-8 flex justify-end">
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-8 py-3 bg-cyan-600 text-white font-bold rounded-xl shadow-lg hover:bg-cyan-700 transform transition active:scale-95 flex items-center gap-2"
+    <DashboardLayout>
+      <div className="space-y-8">
+        
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+           <div>
+              <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
+                 {admin?.zone?.name || "Zone"} Portal
+              </h1>
+              <p className="text-gray-500 font-medium mt-1">
+                 Overseeing administrative functions within the zone
+              </p>
+           </div>
+           <div className="flex items-center gap-3">
+              <Button 
+                variant={activeTab === "list" ? "default" : "outline"}
+                onClick={() => setActiveTab("list")}
+                className="rounded-xl font-bold gap-2"
               >
-                {loading ? 'Processing...' : <>Add Woreda Admin <FaChevronRight /></>}
-              </button>
-            </div>
-          </form>
+                 <Users className="size-4" />
+                 Woreda Admins
+              </Button>
+              <Button 
+                variant={activeTab === "add" ? "default" : "outline"}
+                onClick={() => setActiveTab("add")}
+                className="rounded-xl font-bold gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                 <Plus className="size-4" />
+                 New Woreda Admin
+              </Button>
+           </div>
         </div>
-      ) : (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead className="bg-slate-50 border-b border-slate-200">
-                <tr>
-                  <th className="px-6 py-4 text-sm font-semibold text-slate-700">Name</th>
-                  <th className="px-6 py-4 text-sm font-semibold text-slate-700">Email</th>
-                  <th className="px-6 py-4 text-sm font-semibold text-slate-700">Woreda</th>
-                  <th className="px-6 py-4 text-sm font-semibold text-slate-700">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {woredaAdmins.filter(wa => wa.role === "Woreda_Admin" && wa.zone === admin.zone).length > 0 ? (
-                  woredaAdmins.filter(wa => wa.role === "Woreda_Admin" && wa.zone === admin.zone).map((wa) => (
-                    <tr key={wa.id} className="hover:bg-slate-50 transition">
-                      <td className="px-6 py-4 font-medium text-slate-900">{wa.first_name} {wa.last_name}</td>
-                      <td className="px-6 py-4 text-slate-600">{wa.email}</td>
-                      <td className="px-6 py-4"><span className="px-3 py-1 bg-cyan-50 text-cyan-700 rounded-full text-xs font-bold">{wa.woreda}</span></td>
-                      <td className="px-6 py-4 text-green-600 font-bold text-sm">Active</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="4" className="px-6 py-10 text-center text-slate-500 italic">No woreda administrators found in this zone.</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+
+        {activeTab === "add" ? (
+           <Card className="border-none shadow-2xl shadow-gray-200/40 rounded-[32px] overflow-hidden max-w-4xl mx-auto">
+              <CardHeader className="p-8 bg-blue-600 text-white">
+                 <div className="flex items-center gap-4">
+                    <div className="p-3 bg-white/20 rounded-2xl">
+                       <UserPlus className="size-6 text-white" />
+                    </div>
+                    <div>
+                       <CardTitle className="text-2xl font-extrabold">Register Woreda Admin</CardTitle>
+                       <CardDescription className="text-blue-100 font-medium">Provision a new administrator for a specific woreda</CardDescription>
+                    </div>
+                 </div>
+              </CardHeader>
+              <CardContent className="p-8">
+                 <form onSubmit={handleSubmit} className="space-y-6">
+                    {error && <div className="p-4 bg-red-50 text-red-600 rounded-2xl border-none font-bold text-sm">{error}</div>}
+                    {success && <div className="p-4 bg-emerald-50 text-emerald-600 rounded-2xl border-none font-bold text-sm">{success}</div>}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                       <div className="space-y-2">
+                          <label className="text-xs font-extrabold text-gray-400 uppercase tracking-widest ml-1">First Name</label>
+                          <Input name="first_name" value={formData.first_name} onChange={handleChange} required className="rounded-xl h-12 bg-gray-50 border-transparent focus:bg-white" />
+                       </div>
+                       <div className="space-y-2">
+                          <label className="text-xs font-extrabold text-gray-400 uppercase tracking-widest ml-1">Middle Name</label>
+                          <Input name="middle_name" value={formData.middle_name} onChange={handleChange} required className="rounded-xl h-12 bg-gray-50 border-transparent focus:bg-white" />
+                       </div>
+                       <div className="space-y-2">
+                          <label className="text-xs font-extrabold text-gray-400 uppercase tracking-widest ml-1">Last Name</label>
+                          <Input name="last_name" value={formData.last_name} onChange={handleChange} required className="rounded-xl h-12 bg-gray-50 border-transparent focus:bg-white" />
+                       </div>
+                       <div className="space-y-2">
+                          <label className="text-xs font-extrabold text-gray-400 uppercase tracking-widest ml-1">Email</label>
+                          <Input type="email" name="email" value={formData.email} onChange={handleChange} required className="rounded-xl h-12 bg-gray-50 border-transparent focus:bg-white" />
+                       </div>
+                       <div className="space-y-2">
+                          <label className="text-xs font-extrabold text-gray-400 uppercase tracking-widest ml-1">Password</label>
+                          <Input type="password" name="password" value={formData.password} onChange={handleChange} required className="rounded-xl h-12 bg-gray-50 border-transparent focus:bg-white" />
+                       </div>
+                       <div className="space-y-2">
+                          <label className="text-xs font-extrabold text-gray-400 uppercase tracking-widest ml-1">Gender</label>
+                          <select name="sex" value={formData.sex} onChange={handleChange} className="w-full h-12 px-4 rounded-xl bg-gray-50 border-none outline-none focus:ring-2 focus:ring-blue-100">
+                             <option value="Male">Male</option>
+                             <option value="Female">Female</option>
+                             <option value="Other">Other</option>
+                          </select>
+                       </div>
+                       <div className="space-y-2">
+                          <label className="text-xs font-extrabold text-gray-400 uppercase tracking-widest ml-1">Woreda Assignment</label>
+                          <Input name="woreda_id" value={formData.woreda_id} onChange={handleChange} required className="rounded-xl h-12 bg-gray-50 border-transparent focus:bg-white" placeholder="Enter Woreda ID" />
+                       </div>
+                    </div>
+
+                    <div className="pt-6 border-t border-gray-100 flex justify-end">
+                       <Button type="submit" disabled={loading} className="rounded-2xl h-12 px-10 font-extrabold bg-blue-600 hover:bg-blue-700 shadow-xl shadow-blue-100">
+                          {loading ? 'Processing...' : 'Register Woreda Admin'}
+                       </Button>
+                    </div>
+                 </form>
+              </CardContent>
+           </Card>
+        ) : (
+           <Card className="border-none shadow-2xl shadow-gray-200/40 rounded-[32px] overflow-hidden bg-white/50 backdrop-blur-sm">
+             <CardHeader className="p-8 border-b border-gray-100 flex flex-row items-center justify-between">
+                <div>
+                   <CardTitle className="text-xl font-extrabold">Woreda Administrators</CardTitle>
+                   <CardDescription className="text-gray-500 font-medium">View and manage administrators at the woreda level</CardDescription>
+                </div>
+                <div className="flex items-center gap-3">
+                   <div className="hidden sm:flex relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+                      <Input placeholder="Search..." className="pl-10 rounded-xl bg-gray-50 border-transparent w-48" />
+                   </div>
+                   <Button variant="outline" size="icon" className="rounded-xl">
+                      <Settings className="size-4" />
+                   </Button>
+                </div>
+             </CardHeader>
+             <CardContent className="p-0">
+                <Table>
+                   <TableHeader className="bg-gray-50/50 text-[10px] uppercase font-bold text-gray-400 tracking-widest">
+                      <TableRow className="border-none hover:bg-transparent">
+                         <TableHead className="px-8 py-4">Name</TableHead>
+                         <TableHead>Jurisdiction</TableHead>
+                         <TableHead>Email</TableHead>
+                         <TableHead>Status</TableHead>
+                         <TableHead className="px-8 text-right"></TableHead>
+                      </TableRow>
+                   </TableHeader>
+                   <TableBody>
+                   {loading ? (
+                      <TableRow><TableCell colSpan={5} className="py-12 text-center text-gray-400 font-bold">Loading records...</TableCell></TableRow>
+                   ) : woredaAdmins.length > 0 ? (
+                      woredaAdmins.map((wa) => (
+                         <TableRow key={wa.id} className="border-gray-50 group hover:bg-white transition-all cursor-pointer">
+                            <TableCell className="px-8 py-5">
+                               <div className="flex items-center gap-4">
+                                  <div className="size-10 rounded-2xl bg-blue-50 flex items-center justify-center font-extrabold text-blue-600 uppercase">
+                                     {wa.first_name[0]}{wa.last_name[0]}
+                                  </div>
+                                  <span className="font-extrabold text-gray-900">{wa.first_name} {wa.last_name}</span>
+                               </div>
+                            </TableCell>
+                            <TableCell>
+                               <div className="flex items-center gap-2">
+                                  <MapPin className="size-3 text-gray-400" />
+                                  <span className="font-bold text-gray-700">{wa.woreda?.name || "Unassigned"}</span>
+                               </div>
+                            </TableCell>
+                            <TableCell>
+                               <span className="text-xs font-bold text-gray-500">{wa.email}</span>
+                            </TableCell>
+                            <TableCell>
+                               <Badge className="bg-blue-50 text-blue-600 border-none font-bold rounded-xl px-3 py-1">
+                                  Active
+                               </Badge>
+                            </TableCell>
+                            <TableCell className="px-8 text-right">
+                               <Button variant="ghost" size="icon" className="rounded-xl opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <MoreVertical className="size-4" />
+                               </Button>
+                            </TableCell>
+                         </TableRow>
+                      ))
+                   ) : (
+                      <TableRow><TableCell colSpan={5} className="py-20 text-center text-gray-400 font-bold italic">No records found</TableCell></TableRow>
+                   )}
+                   </TableBody>
+                </Table>
+             </CardContent>
+           </Card>
+        )}
+      </div>
+    </DashboardLayout>
+  )
 }

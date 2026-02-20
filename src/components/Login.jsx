@@ -42,7 +42,7 @@ export default function Login() {
         else if (department === 'midwife') navigate('/MidwifeDashboard');
         else if (department === 'laboratory') navigate('/LabDashboard');
         else if (department === 'human resource') navigate('/HRDashboard');
-        else if (department === 'card office') navigate('/card-office');
+        else if (department === 'card office') navigate('/CardofficeDashboard');
         else setError('Department dashboard not found');
       } else {
         setError('Login failed: no admin or user found');

@@ -1,242 +1,95 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { api, register } from "../api";
-import { FaUserPlus, FaLayerGroup, FaHome, FaChevronRight, FaSignOutAlt } from "react-icons/fa";
+import React, { useEffect, useState } from "react"
+import { DashboardLayout } from "./DashboardLayout"
+import { Map, Users, Plus, MapPin, Search, BarChart3, MoreVertical, Building } from "lucide-react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { authService } from "@/services/authService"
 
 export default function WoredaAdmin() {
-  const navigate = useNavigate();
-  const [admin, setAdmin] = useState(null);
-  const [activeTab, setActiveTab] = useState("list");
-  const [kebeleAdmins, setKebeleAdmins] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-
-  const [formData, setFormData] = useState({
-    first_name: "",
-    middle_name: "",
-    last_name: "",
-    email: "",
-    phone_number: "",
-    password: "",
-    hospital_name: "Kebele Office",
-    service_name: "Public",
-    sex: "Male",
-    age: "",
-    kebele: ""
-  });
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const data = await api("/auth/me");
-        setAdmin(data.admin);
-      } catch (err) {
-        console.error("Failed to fetch profile", err);
-        const storedAdmin = localStorage.getItem("admin");
-        if (storedAdmin) setAdmin(JSON.parse(storedAdmin));
-      }
-    };
-    fetchProfile();
-  }, []);
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    setSuccess("");
-
-    try {
-      const token = localStorage.getItem("token");
-      await register({
-        ...formData,
-        region: admin.region,
-        zone: admin.zone,
-        woreda: admin.woreda
-      }, token);
-      setSuccess("Kebele Admin added successfully!");
-      setFormData({
-        ...formData,
-        first_name: "",
-        middle_name: "",
-        last_name: "",
-        email: "",
-        phone_number: "",
-        password: "",
-        age: "",
-        kebele: ""
-      });
-      fetchAdmins();
-    } catch (err) {
-      setError(err.message || "Failed to add kebele admin");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchAdmins = async () => {
-    try {
-      const data = await api("/admin"); 
-      setKebeleAdmins(data || []);
-    } catch (err) {
-      console.error("Failed to fetch admins", err);
-    }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("admin");
-    navigate("/login");
-  };
-
-  useEffect(() => {
-    if (activeTab === "list") {
-      fetchAdmins();
-    }
-  }, [activeTab]);
-
-  if (!admin) return <div className="p-8 text-center text-slate-500">Loading profile...</div>;
+  const [admin, setAdmin] = useState(null)
+  useEffect(() => { setAdmin(authService.getCurrentUser()) }, [])
 
   return (
-    <div className="max-w-6xl mx-auto p-6 animate-fade-in">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">{admin.woreda} Woreda Dashboard</h1>
-          <p className="text-slate-500 mt-1">Managing kebele administrators for {admin.woreda} Woreda</p>
+    <DashboardLayout>
+      <div className="space-y-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+           <div>
+              <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">{admin?.woreda?.name || "Woreda"} Dashboard</h1>
+              <p className="text-gray-500 font-medium mt-1">Managing kesehatan level woreda and health centers</p>
+           </div>
+           <div className="flex items-center gap-3">
+              <Button className="rounded-xl font-bold gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-100">
+                 <Plus className="size-4" /> Manage Kebeles
+              </Button>
+           </div>
         </div>
-        <div className="flex bg-white rounded-xl shadow-sm border border-slate-200 p-1">
-          <button
-            onClick={() => setActiveTab("list")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${activeTab === "list" ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-50"}`}
-          >
-            <FaLayerGroup /> Kebele Admins
-          </button>
-          <button
-            onClick={() => setActiveTab("add")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${activeTab === "add" ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-50"}`}
-          >
-            <FaUserPlus /> Add Kebele Admin
-          </button>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+           <Card className="border-none shadow-xl shadow-gray-200/40 rounded-[24px]">
+              <CardContent className="p-6">
+                 <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl w-fit mb-4"><Map className="size-6" /></div>
+                 <p className="text-xs font-extrabold text-gray-400 uppercase tracking-widest">Total Kebeles</p>
+                 <h3 className="text-3xl font-black text-gray-900">12</h3>
+              </CardContent>
+           </Card>
+           <Card className="border-none shadow-xl shadow-gray-200/40 rounded-[24px]">
+              <CardContent className="p-6">
+                 <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl w-fit mb-4"><Building className="size-6" /></div>
+                 <p className="text-xs font-extrabold text-gray-400 uppercase tracking-widest">Health Centers</p>
+                 <h3 className="text-3xl font-black text-gray-900">3</h3>
+              </CardContent>
+           </Card>
+           <Card className="border-none shadow-xl shadow-gray-200/40 rounded-[24px]">
+              <CardContent className="p-6">
+                 <div className="p-3 bg-purple-50 text-purple-600 rounded-2xl w-fit mb-4"><Users className="size-6" /></div>
+                 <p className="text-xs font-extrabold text-gray-400 uppercase tracking-widest">Woreda Staff</p>
+                 <h3 className="text-3xl font-black text-gray-900">45</h3>
+              </CardContent>
+           </Card>
+           <Card className="border-none shadow-xl border-t-4 border-t-orange-500 rounded-[24px] bg-white">
+              <CardContent className="p-6">
+                 <div className="p-3 bg-orange-50 text-orange-600 rounded-2xl w-fit mb-4"><BarChart3 className="size-6" /></div>
+                 <p className="text-xs font-extrabold text-gray-400 uppercase tracking-widest">Report Status</p>
+                 <h3 className="text-3xl font-black text-gray-900">Pending</h3>
+              </CardContent>
+           </Card>
         </div>
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg border border-red-100 hover:bg-red-100 transition-colors font-semibold"
-        >
-          <FaSignOutAlt /> Logout
-        </button>
+
+        <Card className="border-none shadow-2xl shadow-gray-200/40 rounded-[32px] overflow-hidden bg-white/50 backdrop-blur-sm">
+           <CardHeader className="p-8 border-b border-gray-100 flex flex-row items-center justify-between">
+              <CardTitle className="text-xl font-extrabold">Facility Registry</CardTitle>
+           </CardHeader>
+           <CardContent className="p-0">
+              <Table>
+                 <TableHeader className="bg-gray-50/50 text-[10px] uppercase font-bold text-gray-400 tracking-widest">
+                    <TableRow className="border-none hover:bg-transparent">
+                       <TableHead className="px-8 py-4">Facility Name</TableHead>
+                       <TableHead>Type</TableHead>
+                       <TableHead>Location</TableHead>
+                       <TableHead>Operational Status</TableHead>
+                       <TableHead className="px-8 text-right"></TableHead>
+                    </TableRow>
+                 </TableHeader>
+                 <TableBody>
+                    <TableRow className="border-gray-50 group hover:bg-white transition-all cursor-pointer">
+                       <TableCell className="px-8 py-5">
+                          <div className="flex items-center gap-4">
+                             <div className="size-10 rounded-2xl bg-gray-100 flex items-center justify-center font-extrabold text-gray-500 uppercase">HC</div>
+                             <span className="font-extrabold text-gray-900">Woreda Primary HC</span>
+                          </div>
+                       </TableCell>
+                       <TableCell><span className="text-sm font-bold text-gray-700">Health Center</span></TableCell>
+                       <TableCell><div className="flex items-center gap-2"><MapPin className="size-3 text-gray-400" /><span className="text-xs font-bold text-gray-500">Center Market</span></div></TableCell>
+                       <TableCell><Badge className="bg-emerald-50 text-emerald-600 font-bold rounded-xl border-none">Active</Badge></TableCell>
+                       <TableCell className="px-8 text-right"><Button variant="ghost" size="icon" className="rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"><MoreVertical className="size-4" /></Button></TableCell>
+                    </TableRow>
+                 </TableBody>
+              </Table>
+           </CardContent>
+        </Card>
       </div>
-
-      {activeTab === "add" ? (
-        <div className="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
-          <div className="bg-teal-600 px-6 py-4">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <FaHome /> Register New Kebele Administrator
-            </h2>
-            <p className="text-teal-100 text-sm">Assign oversight for a specific kebele within {admin.woreda}</p>
-          </div>
-          
-          <form onSubmit={handleSubmit} className="p-8">
-            {error && (
-              <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-lg flex items-center gap-3">
-                {error}
-              </div>
-            )}
-            {success && (
-              <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 rounded-lg flex items-center gap-3">
-                {success}
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-slate-700 ml-1">First Name</label>
-                <input name="first_name" value={formData.first_name} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none transition" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-slate-700 ml-1">Middle Name</label>
-                <input name="middle_name" value={formData.middle_name} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none transition" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-slate-700 ml-1">Last Name</label>
-                <input name="last_name" value={formData.last_name} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none transition" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-slate-700 ml-1">Email</label>
-                <input type="email" name="email" value={formData.email} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none transition" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-slate-700 ml-1">Phone</label>
-                <input name="phone_number" value={formData.phone_number} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none transition" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-slate-700 ml-1">Password</label>
-                <input type="password" name="password" value={formData.password} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none transition" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-slate-700 ml-1">Age</label>
-                <input type="number" name="age" value={formData.age} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none transition" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-slate-700 ml-1">Gender</label>
-                <select name="sex" value={formData.sex} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none transition bg-white">
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-slate-700 ml-1">Kebele Name</label>
-                <input name="kebele" value={formData.kebele} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none transition" placeholder="e.g. Kebele 01" />
-              </div>
-            </div>
-
-            <div className="mt-8 flex justify-end">
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-8 py-3 bg-teal-600 text-white font-bold rounded-xl shadow-lg hover:bg-teal-700 transform transition active:scale-95 flex items-center gap-2"
-              >
-                {loading ? 'Processing...' : <>Add Kebele Admin <FaChevronRight /></>}
-              </button>
-            </div>
-          </form>
-        </div>
-      ) : (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead className="bg-slate-50 border-b border-slate-200">
-                <tr>
-                  <th className="px-6 py-4 text-sm font-semibold text-slate-700">Name</th>
-                  <th className="px-6 py-4 text-sm font-semibold text-slate-700">Email</th>
-                  <th className="px-6 py-4 text-sm font-semibold text-slate-700">Kebele</th>
-                  <th className="px-6 py-4 text-sm font-semibold text-slate-700">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {kebeleAdmins.filter(ka => ka.role === "Kebele_Admin" && ka.woreda === admin.woreda).length > 0 ? (
-                  kebeleAdmins.filter(ka => ka.role === "Kebele_Admin" && ka.woreda === admin.woreda).map((ka) => (
-                    <tr key={ka.id} className="hover:bg-slate-50 transition">
-                      <td className="px-6 py-4 font-medium text-slate-900">{ka.first_name} {ka.last_name}</td>
-                      <td className="px-6 py-4 text-slate-600">{ka.email}</td>
-                      <td className="px-6 py-4"><span className="px-3 py-1 bg-teal-50 text-teal-700 rounded-full text-xs font-bold">{ka.kebele}</span></td>
-                      <td className="px-6 py-4 text-green-600 font-bold text-sm">Active</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="4" className="px-6 py-10 text-center text-slate-500 italic">No kebele administrators found in this woreda.</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+    </DashboardLayout>
+  )
 }

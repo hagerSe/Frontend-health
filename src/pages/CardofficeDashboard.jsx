@@ -1,193 +1,157 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { api } from "../api";
+import React, { useEffect, useState } from "react"
+import { DashboardLayout } from "@/components/DashboardLayout"
 import { 
-  FaUserPlus, FaAddressCard, FaSearch, FaClipboardCheck, 
-  FaSignOutAlt, FaNotesMedical, FaRegAddressBook, FaHospitalUser
-} from "react-icons/fa";
+  UserPlus, 
+  Contact, 
+  Search, 
+  ClipboardCheck, 
+  Hospital, 
+  UserCircle,
+  Clock,
+  Printer,
+  FileText
+} from "lucide-react"
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import { authService } from "@/services/authService"
 
 export default function CardOfficeDashboard() {
-  const [user, setUser] = useState(null);
-  const [activeTab, setActiveTab] = useState("register");
-  const navigate = useNavigate();
+  const [user, setUser] = useState(null)
+  const [activeTab, setActiveTab] = useState("register")
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const data = await api("/auth/me");
-        setUser(data.user);
-      } catch (err) {
-        console.error("Failed to fetch profile", err);
-        const storedUser = localStorage.getItem("user");
-        if (storedUser) {
-          setUser(JSON.parse(storedUser));
-        } else {
-          navigate("/login");
-        }
-      }
-    };
-    fetchProfile();
-  }, [navigate]);
-
-  const handleLogout = () => {
-    localStorage.clear();
-    navigate("/login");
-  };
-
-  if (!user) return (
-    <div className="h-screen w-screen flex items-center justify-center bg-slate-50">
-      <div className="flex flex-col items-center gap-4">
-        <div className="w-12 h-12 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
-        <p className="font-bold text-slate-600 tracking-tight">Loading Card Office...</p>
-      </div>
-    </div>
-  );
+    setUser(authService.getCurrentUser())
+  }, [])
 
   return (
-    <div className="flex h-screen bg-slate-50 font-sans">
-      {/* Sidebar */}
-      <aside className="w-72 bg-slate-900 text-white flex flex-col p-6">
-        <div className="flex items-center gap-3 mb-10 px-2">
-          <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg">
-            <FaAddressCard className="text-xl" />
-          </div>
-          <span className="font-bold text-xl tracking-tight">RegiCare</span>
-        </div>
-
-        <nav className="flex-1 space-y-2">
-          <SidebarItem 
-            icon={<FaUserPlus />} 
-            label="New Registration" 
-            active={activeTab === "register"} 
-            onClick={() => setActiveTab("register")} 
-          />
-          <SidebarItem 
-            icon={<FaRegAddressBook />} 
-            label="Patient Records" 
-            active={activeTab === "records"} 
-            onClick={() => setActiveTab("records")} 
-          />
-          <SidebarItem 
-            icon={<FaSearch />} 
-            label="Search Patient" 
-            active={activeTab === "search"} 
-            onClick={() => setActiveTab("search")} 
-          />
-          <SidebarItem 
-            icon={<FaClipboardCheck />} 
-            label="Daily Reports" 
-            active={activeTab === "reports"} 
-            onClick={() => setActiveTab("reports")} 
-          />
-        </nav>
-
-        <div className="mt-auto space-y-4">
-          <div className="bg-slate-800/50 p-4 rounded-2xl border border-white/5">
-            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Assigned Office</p>
-            <p className="text-sm font-bold truncate">{user.region} Office</p>
-          </div>
-          <button 
-            onClick={handleLogout}
-            className="flex items-center gap-3 w-full p-4 rounded-xl hover:bg-red-500/10 text-red-400 transition-colors font-semibold"
-          >
-            <FaSignOutAlt /> Logout
-          </button>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-20 bg-white border-b border-slate-200 px-8 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-800">Card Office Operations</h2>
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <p className="text-sm font-bold text-slate-900">{user.firstName} {user.lastName}</p>
-              <p className="text-[10px] font-black text-blue-600 uppercase tracking-wide">Registration Specialist</p>
-            </div>
-          </div>
-        </header>
-
-        <div className="flex-1 overflow-y-auto p-8">
-          {activeTab === "register" && (
-            <div className="max-w-4xl animate-fade-in">
-              <div className="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
-                <div className="bg-gradient-to-r from-emerald-600 to-teal-700 p-8 text-white">
-                  <h3 className="text-2xl font-black flex items-center gap-3">
-                    <FaHospitalUser /> Patient Intake Form
-                  </h3>
-                  <p className="text-emerald-50 text-sm mt-1 opacity-80">Please ensure all identity documents are verified before submission.</p>
-                </div>
-                
-                <form className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <InputField label="First Name" placeholder="e.g. Abebe" />
-                  <InputField label="Middle Name" placeholder="e.g. Bekele" />
-                  <InputField label="Last Name" placeholder="e.g. Chala" />
-                  <InputField label="Date of Birth" type="date" />
-                  
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700 ml-1">Gender</label>
-                    <select className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none transition bg-white">
-                      <option>Female</option>
-                      <option>Male</option>
-                      <option>Other</option>
-                    </select>
-                  </div>
-
-                  <InputField label="Identification Number (ID)" placeholder="e.g. ID-88291" />
-                  
-                  <div className="md:col-span-2 space-y-2">
-                    <label className="text-sm font-bold text-slate-700 ml-1">Reason for Visit</label>
-                    <textarea 
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none transition min-h-[100px]"
-                      placeholder="Enter a brief clinical reason for visitation..."
-                    />
-                  </div>
-
-                  <div className="md:col-span-2 flex justify-end gap-3 pt-4">
-                    <button type="button" className="px-8 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 transition">Clear Form</button>
-                    <button disabled className="px-10 py-3 bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition active:scale-95 disabled:opacity-50">
-                      Print Hospital Card
-                    </button>
-                  </div>
-                </form>
+    <DashboardLayout>
+      <div className="space-y-8">
+        
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+           <div>
+              <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Registration Office</h1>
+              <p className="text-gray-500 font-medium mt-1">Patient intake and hospital card issuance</p>
+           </div>
+           <div className="flex items-center gap-3">
+              <div className="hidden sm:flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-xl border border-emerald-100 font-bold">
+                 <Clock className="size-4" />
+                 Shift: Day
               </div>
-            </div>
-          )}
-
-          {activeTab === "records" && (
-            <div className="bg-white rounded-3xl p-12 border-2 border-dashed border-slate-200 text-center animate-fade-in">
-              <FaNotesMedical className="text-6xl text-slate-200 mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-slate-800">Patient Database</h3>
-              <p className="text-slate-500 mt-2 max-w-sm mx-auto">Access and manage full medical history and administrative records for all registered patients.</p>
-              <button onClick={() => setActiveTab("register")} className="mt-6 text-emerald-600 font-bold hover:underline">Return to registration</button>
-            </div>
-          )}
+           </div>
         </div>
-      </main>
-    </div>
-  );
-}
 
-function SidebarItem({ icon, label, active, onClick }) {
-  return (
-    <button 
-      onClick={onClick}
-      className={`flex items-center gap-4 w-full p-4 rounded-2xl transition-all duration-200 ${active ? "bg-white/10 text-emerald-400 shadow-inner" : "text-slate-400 hover:bg-white/5 hover:text-white"}`}
-    >
-      <div className="text-xl">{icon}</div>
-      <span className="font-bold">{label}</span>
-    </button>
-  );
-}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+           
+           {/* Sidebar Actions */}
+           <div className="lg:col-span-1 space-y-4">
+              <Button 
+                variant={activeTab === 'register' ? 'default' : 'outline'} 
+                className={`w-full h-16 justify-start rounded-[20px] px-6 gap-4 font-extrabold transition-all border-none ${activeTab === 'register' ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xl shadow-emerald-100' : 'hover:bg-emerald-50 hover:text-emerald-700'}`}
+                onClick={() => setActiveTab('register')}
+              >
+                 <UserPlus className="size-5" />
+                 New Patient
+              </Button>
+              <Button 
+                variant={activeTab === 'search' ? 'default' : 'outline'}
+                className={`w-full h-16 justify-start rounded-[20px] px-6 gap-4 font-extrabold transition-all border-none ${activeTab === 'search' ? 'bg-emerald-600 text-white shadow-xl border-none' : 'hover:bg-emerald-50 hover:text-emerald-700'}`}
+                onClick={() => setActiveTab('search')}
+              >
+                 <Search className="size-5" />
+                 Find Card
+              </Button>
+              <Button 
+                variant={activeTab === 'reports' ? 'default' : 'outline'}
+                className={`w-full h-16 justify-start rounded-[20px] px-6 gap-4 font-extrabold transition-all border-none ${activeTab === 'reports' ? 'bg-emerald-600 text-white shadow-xl border-none' : 'hover:bg-emerald-50 hover:text-emerald-700'}`}
+                onClick={() => setActiveTab('reports')}
+              >
+                 <ClipboardCheck className="size-5" />
+                 Daily Stats
+              </Button>
 
-function InputField({ label, ...props }) {
-  return (
-    <div className="space-y-2">
-      <label className="text-sm font-bold text-slate-700 ml-1">{label}</label>
-      <input 
-        {...props} 
-        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none transition" 
-      />
-    </div>
-  );
+              <Card className="mt-8 border-none shadow-xl shadow-gray-200/40 rounded-[24px] bg-slate-900 text-white p-6">
+                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Location Context</p>
+                 <div className="flex items-center gap-2 mb-4">
+                    <Hospital className="size-4 text-emerald-400" />
+                    <span className="font-bold text-sm">{user?.hospital?.name || 'Assigned Center'}</span>
+                 </div>
+                 <div className="flex items-center gap-2">
+                    <Contact className="size-4 text-emerald-400" />
+                    <span className="font-bold text-sm">Zone: {user?.zone?.name || 'Assigned Zone'}</span>
+                 </div>
+              </Card>
+           </div>
+
+           {/* Content Area */}
+           <div className="lg:col-span-3">
+              {activeTab === 'register' ? (
+                 <Card className="border-none shadow-2xl shadow-gray-200/40 rounded-[32px] overflow-hidden">
+                    <CardHeader className="p-8 bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
+                       <CardTitle className="text-2xl font-black">Patient Intake</CardTitle>
+                       <CardDescription className="text-emerald-50 font-medium opacity-80">Verify identification and create hospital record</CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-8">
+                       <form className="space-y-6">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                             <div className="space-y-2">
+                                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Full Name</label>
+                                <Input placeholder="First Middle Last" className="rounded-xl h-12 bg-gray-50 border-transparent focus:bg-white transition-all" />
+                             </div>
+                             <div className="space-y-2">
+                                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Date of Birth</label>
+                                <Input type="date" className="rounded-xl h-12 bg-gray-50 border-transparent focus:bg-white" />
+                             </div>
+                             <div className="space-y-2">
+                                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Gender</label>
+                                <select className="w-full h-12 px-4 rounded-xl bg-gray-50 border-none font-bold text-gray-700">
+                                   <option>Female</option>
+                                   <option>Male</option>
+                                   <option>Other</option>
+                                </select>
+                             </div>
+                             <div className="space-y-2">
+                                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Citizenship ID</label>
+                                <Input placeholder="ID Number" className="rounded-xl h-12 bg-gray-50 border-transparent focus:bg-white" />
+                             </div>
+                          </div>
+                          <div className="space-y-2">
+                             <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Clinical Triage / Reason</label>
+                             <textarea className="w-full min-h-[120px] p-4 rounded-2xl bg-gray-50 border-none outline-none focus:ring-2 focus:ring-emerald-100 font-medium" placeholder="Brief visit reason..." />
+                          </div>
+                          <div className="pt-6 border-t border-gray-100 flex justify-end gap-4">
+                             <Button variant="outline" className="rounded-2xl h-12 px-8 font-bold">Clear</Button>
+                             <Button className="rounded-2xl h-12 px-10 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold shadow-xl shadow-emerald-100 gap-2">
+                                <Printer className="size-4" />
+                                Generate Card
+                             </Button>
+                          </div>
+                       </form>
+                    </CardContent>
+                 </Card>
+              ) : (
+                 <div className="bg-white rounded-[40px] p-16 border-2 border-dashed border-gray-100 text-center animate-in fade-in duration-700">
+                    <FileText className="size-16 text-gray-200 mx-auto mb-6" />
+                    <h3 className="text-2xl font-black text-gray-900">Module restricted</h3>
+                    <p className="text-gray-500 font-medium mt-2 max-w-sm mx-auto">This section is currently being optimized for faster data retrieval.</p>
+                    <Button variant="ghost" className="mt-6 text-emerald-600 font-black hover:bg-emerald-50 rounded-xl" onClick={() => setActiveTab('register')}>
+                       Back to Registration
+                    </Button>
+                 </div>
+              )}
+           </div>
+
+        </div>
+
+      </div>
+    </DashboardLayout>
+  )
 }
