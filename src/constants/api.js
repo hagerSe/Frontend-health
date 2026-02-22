@@ -18,8 +18,8 @@ export const API_ENDPOINTS = {
     GEO: {
         BASE: `${API_BASE_URL}/geo`,
         REGIONS: `${API_BASE_URL}/geo/regions`,
-        ZONES: (regionId) => `${API_BASE_URL}/geo/regions/${regionId}/zones`,
-        WOREDAS: (zoneId) => `${API_BASE_URL}/geo/zones/${zoneId}/woredas`,
+        ZONES: (regionId) => regionId ? `${API_BASE_URL}/geo/zones/${regionId}` : `${API_BASE_URL}/geo/zones`,
+        WOREDAS: (zoneId) => zoneId ? `${API_BASE_URL}/geo/woredas/${zoneId}` : `${API_BASE_URL}/geo/woredas`,
     },
     HOSPITALS: {
         BASE: `${API_BASE_URL}/hospitals`,

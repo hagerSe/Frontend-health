@@ -31,7 +31,31 @@ export const geoService = {
    * Adding this as a placeholder based on typical hierarchy
    */
   async getKebeles(woredaId: string | number) {
-    const response = await apiClient.get(`${API_ENDPOINTS.GEO.BASE}/woredas/${woredaId}/kebeles`);
+    const response = await apiClient.get(`${API_ENDPOINTS.GEO.BASE}/kebeles/${woredaId}`);
+    return response.data;
+  },
+
+  /**
+   * Create a new zone
+   */
+  async createZone(zoneData: any) {
+    const response = await apiClient.post(`${API_ENDPOINTS.GEO.BASE}/zones`, zoneData);
+    return response.data;
+  },
+
+  /**
+   * Create a new woreda
+   */
+  async createWoreda(woredaData: any) {
+    const response = await apiClient.post(`${API_ENDPOINTS.GEO.BASE}/woredas`, woredaData);
+    return response.data;
+  },
+
+  /**
+   * Create a new kebele
+   */
+  async createKebele(kebeleData: any) {
+    const response = await apiClient.post(`${API_ENDPOINTS.GEO.BASE}/kebeles`, kebeleData);
     return response.data;
   }
 };
